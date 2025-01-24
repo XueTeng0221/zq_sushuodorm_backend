@@ -12,4 +12,6 @@ public class UserUpdateRequest implements Serializable {
     private String userAvatar;
     private String userRole;
     private String userProfile;
+    private String phone;
+    private String roomId;
 }

@@ -4,4 +4,5 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
 
 public interface UserMapper extends BaseMapper<UserItem> {
+    UserItem getUserById(String userId);
 }

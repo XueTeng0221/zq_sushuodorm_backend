@@ -15,4 +15,7 @@ public class UserVo implements Serializable {
     private String userAccount;
     private String userAvatar;
     private String userProfile;
+    private String gender;
+    private String phone;
+    private String roomId;
 }

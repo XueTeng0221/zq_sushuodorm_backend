@@ -11,4 +11,8 @@ public class UserAddRequest implements Serializable {
     private String userAccount;
     private String userAvatar;
     private String userRole;
+    private String userProfile;
+    private String gender;
+    private String roomId;
+    private String phone;
 }
