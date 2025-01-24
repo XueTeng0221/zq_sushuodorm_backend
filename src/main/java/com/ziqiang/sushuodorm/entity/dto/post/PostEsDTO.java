@@ -1,5 +1,6 @@
 package com.ziqiang.sushuodorm.entity.dto.post;
 
+import com.ziqiang.sushuodorm.entity.item.CommentItem;
 import com.ziqiang.sushuodorm.entity.item.PostItem;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -9,11 +10,13 @@ import org.springframework.util.CollectionUtils;
 import java.io.Serializable;
 import java.sql.Date;
 import java.util.List;
+import java.util.Set;
 
 @Data
 public class PostEsDTO implements Serializable {
     private static final long serialVersionUID = 1L;
     private List<String> tags;
+    private Set<CommentItem> comments;
     private Date date;
     private String title;
     private String content;
@@ -36,6 +39,9 @@ public class PostEsDTO implements Serializable {
         if (StringUtils.isNotBlank(postItem.getDate().toString())) {
             postEsDTO.setDate(postItem.getDate());
         }
+        if (!CollectionUtils.isEmpty(postItem.getComments())) {
+            postEsDTO.setComments(postItem.getComments());
+        }
         return postEsDTO;
     }
 
@@ -49,8 +55,11 @@ public class PostEsDTO implements Serializable {
         if (!CollectionUtils.isEmpty(tagList)) {
             postItem.setTags(StringUtils.join(tagList, ","));
         }
-        if (postEsDTO.getDate() != null) {
+        if (StringUtils.isNotBlank(postEsDTO.getDate().toString())) {
             postItem.setDate(postEsDTO.getDate());
+        }
+        if (!CollectionUtils.isEmpty(postEsDTO.getComments())) {
+            postItem.setComments(postEsDTO.getComments());
         }
         return postItem;
     }

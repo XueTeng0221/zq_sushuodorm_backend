@@ -8,6 +8,7 @@ import org.apache.ibatis.type.UnknownTypeHandler;
 import java.io.Serializable;
 import java.sql.Date;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Accessors(chain = true)
@@ -16,7 +17,7 @@ public class PostItem implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 
-    private List<CommentItem> comments;
+    private Set<CommentItem> comments;
 
     private Date date;
 
