@@ -33,12 +33,14 @@ public class PostItem implements Serializable {
     @TableField(value = "tags", updateStrategy = FieldStrategy.NOT_EMPTY)
     private String tags;
 
+    @TableField
+    private Long likes;
+
+    @TableField
+    private Long favorites;
+
     @TableId(type = IdType.ASSIGN_ID)
     private Integer id;
-
-    private Integer likes;
-
-    private Integer favorites;
 
     @TableLogic
     private Integer isDeleted;
