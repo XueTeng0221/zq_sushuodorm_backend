@@ -9,9 +9,10 @@ import com.ziqiang.sushuodorm.entity.vo.CommentVo;
 import java.util.List;
 
 public interface CommentService extends IService<CommentItem> {
-    boolean addComment(Long postId);
 
-    boolean addReply(Long commentId);
+    boolean addComment(Long postId, Long userId, String content);
+
+    boolean addReply(Long commentId, Long userId, String content);
 
     boolean likeComment(Long commentId);
 

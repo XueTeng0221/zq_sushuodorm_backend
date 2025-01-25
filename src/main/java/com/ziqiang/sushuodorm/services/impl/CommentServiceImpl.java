@@ -9,12 +9,12 @@ import com.ziqiang.sushuodorm.entity.dto.comment.CommentQueryRequest;
 import com.ziqiang.sushuodorm.entity.item.CommentItem;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.entity.vo.CommentVo;
+import com.ziqiang.sushuodorm.exception.BizException;
 import com.ziqiang.sushuodorm.exception.NoSuchPostException;
 import com.ziqiang.sushuodorm.mapper.CommentMapper;
 import com.ziqiang.sushuodorm.mapper.PostMapper;
 import com.ziqiang.sushuodorm.mapper.UserMapper;
 import com.ziqiang.sushuodorm.services.CommentService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -22,48 +22,49 @@ import lombok.EqualsAndHashCode;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> implements CommentService {
-    @Autowired
     private CommentMapper commentMapper;
-
-    @Autowired
     private UserMapper userMapper;
-
-    @Autowired
     private PostMapper postMapper;
+    private Map<Long, Set<CommentItem>> commentTree = new HashMap<>();
 
-    private Map<Long, Set<CommentItem>> commentTree;
+    public CommentServiceImpl(CommentMapper commentMapper, UserMapper userMapper, PostMapper postMapper) {
+        this.commentMapper = commentMapper;
+        this.userMapper = userMapper;
+        this.postMapper = postMapper;
+    }
 
     @Override
-    public boolean addComment(Long postId) {
+    public boolean addComment(Long postId, Long userId, String content) {
         CommentItem commentItem = new CommentItem()
                 .setPostId(postId)
+                .setId(userId)
                 .setParentId(-1L)
+                .setContent(content)
                 .setReplies(new HashSet<>());
-
         commentMapper.insert(commentItem);
         commentTree.put(commentItem.getId(), new HashSet<>());
         return saveOrUpdate(commentItem);
     }
 
     @Override
-    public boolean addReply(Long commentId) {
+    public boolean addReply(Long commentId, Long userId, String content) {
         QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("id", commentId);
         CommentItem commentItem = commentMapper.selectById(commentId);
-
         CommentItem replyItem = new CommentItem()
                 .setId(commentId + 1)
                 .setParentId(commentId)
+                .setContent(content)
                 .setReplies(new HashSet<>());
         commentItem.setReplyNum(commentItem.getReplyNum() + 1);
-
         commentMapper.insert(replyItem);
-        commentTree.get(commentItem.getId()).add(commentItem);
+        commentTree.get(commentItem.getId()).add(replyItem);
         commentTree.put(replyItem.getId(), new HashSet<>());
         return saveOrUpdate(commentItem);
     }
@@ -72,7 +73,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     public boolean likeComment(Long commentId) {
         QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("id", commentId);
-
         CommentItem commentItem = commentMapper.selectById(commentId);
         commentItem.setLikes(commentItem.getLikes() + 1);
         return commentMapper.updateById(commentItem) > 0;
@@ -101,12 +101,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
         if (commentMapper.selectOne(queryWrapper) == null) {
             throw new NoSuchPostException(ErrorCode.CLIENT_ERROR);
         }
-
         CommentItem commentItem = commentMapper.selectById(commentId);
         if (commentItem.getParentId() != -1) {
             commentItem.setReplies(commentTree.get(commentItem.getParentId()));
         }
-        commentItem.setReplies(commentTree.get(commentItem.getParentId()));
         return new CommentVo()
                 .setId(commentItem.getId())
                 .setContent(commentItem.getContent())
@@ -134,9 +132,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
 
     @Override
     public IPage<CommentVo> getAllComments(String userName, int pageNum, int pageSize) {
-        if (pageNum <= 0 || pageSize <= 0) {
-            throw new IllegalArgumentException("Invalid page parameters");
-        }
         try {
             QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("author", userName);
@@ -157,18 +152,15 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
                     .setLikes(commentItem.getLikes())
                     .setUserId(commentItem.getId())
             );
-        } catch (Exception e) {
+        } catch (BizException e) {
             log.error("Error occurred while fetching comments: ", e);
-            throw new RuntimeException("Failed to fetch comments", e);
+            throw new NoSuchPostException(ErrorCode.CLIENT_ERROR);
         }
     }
 
 
     @Override
     public IPage<CommentVo> getAllReplies(CommentQueryRequest queryRequest) {
-        if (queryRequest == null || queryRequest.getCommentId() == null) {
-            throw new IllegalArgumentException("Invalid input: CommentId cannot be null");
-        }
         try {
             QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("parent_id", queryRequest.getCommentId());
@@ -192,28 +184,36 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
                     .setLikes(commentItem.getLikes())
                     .setUserId(commentItem.getId())
             );
-        } catch (Exception e) {
+        } catch (BizException e) {
             log.error("Error occurred while fetching replies: ", e);
-            throw new RuntimeException("Failed to fetch replies", e);
+            throw new NoSuchPostException(ErrorCode.CLIENT_ERROR);
         }
     }
 
-
     @Override
-    public IPage<CommentVo> getAllReplies(Long commentId, int pageNum, int pageId) {
+    public IPage<CommentVo> getAllReplies(Long commentId, int pageNum, int pageSize) {
         QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("id", commentId);
         List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
-        List<Long> replyNums = commentItems.stream().map(CommentItem::getReplyNum).toList();
-        Map<Long, String> userNameMap = commentMapper.selectList(new QueryWrapper<CommentItem>().
-                in("id", replyNums)).stream().collect(
-                HashMap::new,
-                (m, v) -> m.put(v.getPostId(), v.getAuthor()),
-                HashMap::putAll
-        );
-        commentItems.forEach(commentItem -> commentItem.setAuthor(userNameMap.get(commentItem.getId())));
+        if (commentItems.isEmpty()) {
+            return new Page<>(pageNum, pageSize).convert(commentItem -> new CommentVo());
+        }
+        List<Long> replyIds = commentItems.stream()
+                .flatMap(commentItem -> Stream.ofNullable(commentItem.getReplyNum()))
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Long, String> userNameMap = commentMapper.selectList(new QueryWrapper<CommentItem>()
+                .in("id", replyIds))
+                .stream()
+                .collect(Collectors.toMap(CommentItem::getId, CommentItem::getAuthor));
+        commentItems.forEach(commentItem -> {
+            Long replyId = commentItem.getReplyNum();
+            if (replyId != null) {
+                commentItem.setAuthor(userNameMap.getOrDefault(replyId, "Unknown"));
+            }
+        });
         return commentMapper.selectPage(
-                new Page<>(pageNum, pageId), queryWrapper
+                new Page<>(pageNum, pageSize), queryWrapper
         ).convert(commentItem -> new CommentVo()
                 .setId(commentItem.getId())
                 .setContent(commentItem.getContent())
@@ -232,7 +232,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
         Map<Long, String> userNameMap = commentMapper.selectList(new QueryWrapper<CommentItem>().
                 in("id", commentItems.stream().map(CommentItem::getId).toList())).stream().collect(
                 HashMap::new,
-                (m, v) -> m.put(v.getPostId(), v.getAuthor()),
+                (m, v) -> m.put(v.getId(), v.getAuthor()),
                 HashMap::putAll
         );
         commentItems.forEach(commentItem -> commentItem.setAuthor(userNameMap.get(commentItem.getId())));
@@ -251,9 +251,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
 
     @Override
     public IPage<CommentVo> getAllRepliesByUsername(String replierName, String username) {
-        if (replierName.isEmpty() || username.isEmpty()) {
-            throw new IllegalArgumentException("replierName and username cannot be null or empty");
-        }
         QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("author", replierName);
         List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
