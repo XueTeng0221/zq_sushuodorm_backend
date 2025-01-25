@@ -4,13 +4,16 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import org.springframework.boot.autoconfigure.mail.MailProperties;
 
 import java.io.Serializable;
 import java.sql.Date;
+import java.util.List;
 import java.util.Map;
 
 @Data
+@Accessors(chain = true)
 @TableName(value = "mail")
 public class MailItem implements Serializable {
     @TableField(exist = false)
@@ -20,21 +23,21 @@ public class MailItem implements Serializable {
 
     private Map<String, UserItem> receivers;
 
+    private UserItem sender;
+
+    private Date date;
+
     private Long id;
 
     private Long userId;
 
     private String senderName;
 
-    private UserItem sender;
-
     private String email;
 
     private String title;
 
     private String subject;
-
-    private Date date;
 
     @TableLogic
     private Boolean isRead;
