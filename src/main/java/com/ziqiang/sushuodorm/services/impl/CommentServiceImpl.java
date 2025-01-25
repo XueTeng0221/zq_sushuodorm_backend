@@ -36,7 +36,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     @Autowired
     private PostMapper postMapper;
 
-    // commentTree键存储commentId, 值存储该commentId下的所有回复
     private Map<Long, Set<CommentItem>> commentTree;
 
     @Override
