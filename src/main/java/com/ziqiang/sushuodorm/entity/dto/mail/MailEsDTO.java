@@ -22,6 +22,7 @@ public class MailEsDTO implements Serializable {
     private String title;
     private String subject;
     private String senderName;
+    private Boolean isDeleted;
     private Long id;
     private Long userId;
 
