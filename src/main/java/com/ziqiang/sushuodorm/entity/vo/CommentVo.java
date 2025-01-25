@@ -17,5 +17,6 @@ public class CommentVo implements Serializable {
     private Long likes;
     private Long favorites;
     private Long userId;
+    private Long id;
     private Boolean isDelete;
 }

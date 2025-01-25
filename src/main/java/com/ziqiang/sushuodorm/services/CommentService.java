@@ -9,19 +9,21 @@ import com.ziqiang.sushuodorm.entity.vo.CommentVo;
 import java.util.List;
 
 public interface CommentService extends IService<CommentItem> {
-    String addComment(String content);
+    boolean addComment(Long postId);
 
-    String addComment(Long commentId);
+    boolean addReply(Long commentId);
 
     boolean likeComment(Long commentId);
 
     boolean deleteComment(Long commentId);
 
+    boolean deleteComment(Long commentId, Long postId);
+
     CommentVo getComment(Long commentId);
 
     IPage<CommentVo> getAllComments(CommentQueryRequest queryRequest);
 
-    IPage<CommentVo> getAllComments(Long postId, int pageNum, int pageId);
+    IPage<CommentVo> getAllComments(String userName, int pageNum, int pageId);
 
     IPage<CommentVo> getAllReplies(CommentQueryRequest queryRequest);
 
@@ -31,9 +33,7 @@ public interface CommentService extends IService<CommentItem> {
 
     IPage<CommentVo> getAllRepliesByUsername(String replierName, String username);
 
-    List<CommentItem> findComments(CommentQueryRequest queryRequest);
+    List<CommentItem> findComments(CommentQueryRequest queryRequest, Long postId);
 
-    List<CommentItem> findCommentsByUsername(CommentQueryRequest queryRequest, String username);
-
-    CommentItem replyComment(Long parentId, CommentItem commentItem);
+    List<CommentItem> findCommentsByUsername(String username);
 }
