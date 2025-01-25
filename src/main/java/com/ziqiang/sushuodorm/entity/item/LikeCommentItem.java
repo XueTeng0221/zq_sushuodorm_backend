@@ -7,8 +7,8 @@ import java.io.Serializable;
 import java.util.Date;
 
 @Data
-@TableName(value = "like")
-public class LikeItem implements Serializable {
+@TableName(value = "likeComment")
+public class LikeCommentItem implements Serializable {
     @TableField(value = "serialVersionUID", fill = FieldFill.INSERT)
     private static final long serialVersionUID = 1L;
 
@@ -19,9 +19,7 @@ public class LikeItem implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private Long postId;
+    private Long commentId;
 
     private Long userId;
-
-    private Long commentId;
 }

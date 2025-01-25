@@ -5,7 +5,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class LikeAddRequest implements Serializable {
+public class LikePostAddRequest implements Serializable {
     private static final long serialVersionUID = 1L;
     private Long postId;
 }
