@@ -12,14 +12,18 @@ public class LikePostItem implements Serializable {
     @TableField(value = "serialVersionUID", fill = FieldFill.INSERT)
     private static final long serialVersionUID = 1L;
 
+    @TableField
     private Date date;
 
+    @TableField
     private String username;
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField
     private Long postId;
 
+    @TableField
     private Long userId;
 }
