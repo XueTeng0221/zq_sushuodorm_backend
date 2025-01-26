@@ -13,25 +13,13 @@ import java.util.function.Function;
 
 @Mapper
 public interface FavoriteMapper extends BaseMapper<FavoriteItem> {
-    IPage<PostItem> listFavoritePostByPage(IPage<PostItem> page, @Param("ew") Wrapper<PostItem> queryWrapper);
-
     boolean exists(Wrapper<FavoriteItem> queryWrapper);
 
-    long count();
-
-    long count(Wrapper<FavoriteItem> queryWrapper);
-
-    List<FavoriteItem> list(Wrapper<FavoriteItem> queryWrapper);
-
-    List<FavoriteItem> list(IPage<FavoriteItem> page, Wrapper<FavoriteItem> queryWrapper);
-
-    List<FavoriteItem> list();
-
-    List<FavoriteItem> list(IPage<FavoriteItem> page);
-
-    List<FavoriteItem> listObjs(Wrapper<FavoriteItem> queryWrapper);
-
-    List<FavoriteItem> listObjs(Wrapper<FavoriteItem> queryWrapper, Function<? super Object, ?> mapper);
+    IPage<PostItem> listFavoritePostByPage(IPage<PostItem> page, @Param("ew") Wrapper<PostItem> queryWrapper);
 
     List<FavoriteItem> listObjs();
+
+    List<FavoriteItem> listObjs(@Param("ew") Wrapper<FavoriteItem> queryWrapper);
+
+    List<FavoriteItem> listObjs(@Param("ew") Wrapper<FavoriteItem> queryWrapper, Function<? super Object, ?> mapper);
 }
