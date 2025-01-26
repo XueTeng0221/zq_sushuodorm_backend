@@ -16,9 +16,9 @@ import java.util.Set;
 public class PostItem implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
-
+    @TableField(exist = false)
     private Set<CommentItem> comments;
-
+    @TableField(exist = false)
     private Date date;
     @TableField(value = "title", updateStrategy = FieldStrategy.NOT_EMPTY)
     private String title;
