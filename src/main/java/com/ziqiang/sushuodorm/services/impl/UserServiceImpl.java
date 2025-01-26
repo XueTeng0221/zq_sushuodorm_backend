@@ -9,6 +9,7 @@ import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.mapper.RoomMapper;
 import com.ziqiang.sushuodorm.mapper.UserMapper;
 import com.ziqiang.sushuodorm.services.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.ObjectUtils;
@@ -31,6 +32,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
     public UserServiceImpl(UserMapper userMapper, RoomMapper roomMapper) {
         this.userMapper = userMapper;
         this.roomMapper = roomMapper;
+    }
+
+    @Override
+    public UserItem getLoginUser(HttpServletRequest request) {
+        QueryWrapper<UserItem> queryWrapper = new QueryWrapper<UserItem>().eq("union_id", request.getParameter("code"));
+        UserItem loginUser = userMapper.selectOne(queryWrapper);
+        return ObjectUtils.isEmpty(loginUser) ? null : loginUser;
     }
 
     @Override

@@ -1,11 +1,15 @@
 package com.ziqiang.sushuodorm.services;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ziqiang.sushuodorm.entity.item.MsgItem;
-import org.springframework.data.domain.Page;
+
+import java.util.List;
 
 public interface MsgService extends IService<MsgItem> {
     boolean saveItem(String userId, String content);
 
-    Page<MsgItem> getPage(int currentPage, int pageSize);
+    List<MsgItem> getMsgList(String userId);
+
+    Page<MsgItem> getPage(String userId, int currentPage, int pageSize);
 }

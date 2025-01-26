@@ -87,6 +87,15 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implement
                         (existing, replacement) -> existing));
         commentItems.forEach(commentItem -> {
             CommentItem relatedComment = userNameMap.get(commentItem.getReplyNum());
+            if (!commentItem.getReplies().isEmpty()) {
+                commentItem.getReplies().forEach(reply -> {
+                    CommentItem relatedReply = userNameMap.get(reply.getReplyNum());
+                    if (relatedReply != null) {
+                        reply.setAuthor(relatedReply.getAuthor());
+                    }
+                });
+            }
+            commentItem.setAuthor(relatedComment.getAuthor());
         });
         return commentMapper.selectPage(
                 new CommentQueryRequest().getPage(),

@@ -19,13 +19,13 @@ public class RoomItem implements Serializable {
     private static final long serialVersionUID = 1L;
     @TableField(value = "dorm_name")
     private String dormName;
-    @TableId
+    @TableField(value = "room_id")
     @NotNull(message = "寝室号不能为空")
     private Integer roomId;
     @TableField(value = "room_name")
     private String roomName;
-    @TableId
+    @TableField(value = "capacity")
     private Integer capacity;
     @TableField(value = "occupants")
-    private Map<Integer, UserItem> occupants;
+    private Map<String, UserItem> occupants;
 }

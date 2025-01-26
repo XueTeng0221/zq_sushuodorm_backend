@@ -32,7 +32,7 @@ public class BaseResponse<T> implements Serializable {
         this.data = data;
     }
 
-    public static <T> BaseResponse error(int code, T data, String message) {
+    public static <T> BaseResponse<T> error(int code, T data, String message) {
         return new BaseResponse<>(code, data, message);
     }
 }

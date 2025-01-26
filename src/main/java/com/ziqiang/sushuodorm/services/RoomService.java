@@ -10,13 +10,14 @@ import com.ziqiang.sushuodorm.entity.vo.RoomVo;
 import com.ziqiang.sushuodorm.entity.vo.UserVo;
 
 import java.util.List;
+import java.util.Map;
 
 public interface RoomService extends IService<RoomItem> {
-    String saveRoom(RoomItem roomItem);
+    boolean saveRoom(Map<String, UserItem> occupants, String roomName);
 
-    boolean updateRoom(UserUpdateRequest updateRequest, RoomItem roomItem);
+    boolean updateRoom(UserUpdateRequest updateRequest, Map<String, UserItem> occupants);
 
-    boolean removeRoom(RoomItem roomItem);
+    boolean removeRoom(String roomId);
 
     IPage<RoomVo> getPage(int pageNum, int pageId);
 
@@ -26,7 +27,7 @@ public interface RoomService extends IService<RoomItem> {
 
     IPage<RoomVo> getAllRooms(RoomQueryRequest roomQueryRequest);
 
-    IPage<UserVo> getOccupantsByRoomId(String roomId, int pageNum, int pageId);
-
     IPage<RoomVo> getRoomsByOccupants(List<String> occupants, int pageNum, int pageId);
+
+    IPage<UserVo> getOccupantsByRoomId(String roomId, int pageNum, int pageId);
 }
