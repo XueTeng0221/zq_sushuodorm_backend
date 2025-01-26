@@ -13,15 +13,14 @@ import java.sql.Date;
 @TableName("msg")
 public class MsgItem implements Serializable {
     private static final long serialVersionUID = 1L;
-
+    @TableField(value = "date")
     private Date date;
-
+    @TableField(value = "content")
     private String content;
-
+    @TableField(value = "author")
     private String author;
-
+    @TableField(value = "id")
     private Long id;
-
     @TableField
     private Date createTime;
     @TableField
