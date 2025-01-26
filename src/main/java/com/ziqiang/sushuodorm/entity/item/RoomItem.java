@@ -17,20 +17,15 @@ import java.util.Map;
 public class RoomItem implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
-
     @TableField(value = "dorm_name")
     private String dormName;
-
     @TableId
     @NotNull(message = "寝室号不能为空")
     private Integer roomId;
-
     @TableField(value = "room_name")
     private String roomName;
-
     @TableId
     private Integer capacity;
-
     @TableField(value = "occupants")
     private Map<Integer, UserItem> occupants;
 }

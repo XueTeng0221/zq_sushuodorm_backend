@@ -2,11 +2,13 @@ package com.ziqiang.sushuodorm.entity.item;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 import java.util.Date;
 
 @Data
+@Accessors(chain = true)
 @TableName(value = "likeComment")
 public class LikeCommentItem implements Serializable {
     @TableField(value = "serialVersionUID", fill = FieldFill.INSERT)
@@ -15,7 +17,6 @@ public class LikeCommentItem implements Serializable {
     private Date date;
 
     private String username;
-
     @TableId(type = IdType.AUTO)
     private Long id;
 

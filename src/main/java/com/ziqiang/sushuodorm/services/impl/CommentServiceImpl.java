@@ -12,7 +12,6 @@ import com.ziqiang.sushuodorm.entity.vo.CommentVo;
 import com.ziqiang.sushuodorm.exception.BizException;
 import com.ziqiang.sushuodorm.exception.NoSuchPostException;
 import com.ziqiang.sushuodorm.mapper.CommentMapper;
-import com.ziqiang.sushuodorm.mapper.LikePostMapper;
 import com.ziqiang.sushuodorm.mapper.PostMapper;
 import com.ziqiang.sushuodorm.mapper.UserMapper;
 import com.ziqiang.sushuodorm.services.CommentService;
@@ -27,16 +26,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-@Data
 @EqualsAndHashCode(callSuper = false)
+@Data
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> implements CommentService {
     private CommentMapper commentMapper;
     private UserMapper userMapper;
     private PostMapper postMapper;
-    private LikePostMapper likePostMapper;
     private Map<Long, Set<CommentItem>> commentTree = new HashMap<>();
-
-    @Autowired
+    
     public CommentServiceImpl(CommentMapper commentMapper, UserMapper userMapper, PostMapper postMapper) {
         this.commentMapper = commentMapper;
         this.userMapper = userMapper;
@@ -58,8 +55,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
 
     @Override
     public boolean addReply(Long commentId, Long userId, String content) {
-        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<CommentItem>().eq("id", commentId);
-        CommentItem commentItem = commentMapper.selectOne(queryWrapper);
+        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", commentId);
+        CommentItem commentItem = commentMapper.selectById(commentId);
         CommentItem replyItem = new CommentItem()
                 .setId(commentId + 1)
                 .setParentId(commentId)
@@ -90,15 +88,11 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
 
     @Override
     public boolean deleteComment(Long commentId, Long postId) {
-        try {
-            QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("id", commentId).eq("post_id", postId);
-            CommentItem commentItem = commentMapper.selectOne(queryWrapper);
-            return commentMapper.deleteById(commentItem) > 0;
-        } catch (BizException e) {
-            log.error("帖子不存在", e);
-            throw new NoSuchPostException(ErrorCode.CLIENT_ERROR);
-        }
+        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", commentId).eq("post_id", postId);
+        CommentItem commentItem = commentMapper.selectById(commentId);
+        commentItem.setPostId(postId);
+        return commentMapper.deleteById(commentItem) > 0;
     }
 
     @Override

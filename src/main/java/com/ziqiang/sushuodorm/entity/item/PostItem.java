@@ -20,28 +20,20 @@ public class PostItem implements Serializable {
     private Set<CommentItem> comments;
 
     private Date date;
-
     @TableField(value = "title", updateStrategy = FieldStrategy.NOT_EMPTY)
     private String title;
-
     @TableField(value = "content", updateStrategy = FieldStrategy.NOT_EMPTY)
     private String content;
-
     @TableField(value = "author", updateStrategy = FieldStrategy.NOT_EMPTY)
     private String author;
-
     @TableField(value = "tags", updateStrategy = FieldStrategy.NOT_EMPTY)
     private String tags;
-
     @TableField
     private Long likes;
-
     @TableField
     private Long favorites;
-
     @TableId(type = IdType.ASSIGN_ID)
     private Integer id;
-
     @TableLogic
     private Integer isDeleted;
 }
