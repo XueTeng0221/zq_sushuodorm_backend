@@ -10,5 +10,9 @@ import java.util.List;
 
 @Mapper
 public interface MailMapper extends BaseMapper<MailItem> {
+    int getReadNum(MailItem mailItem, Wrapper<MailItem> queryWrapper);
+
+    List<MailItem> listMail(Wrapper<MailItem> queryWrapper);
+
     List<MailItem> listMailByPage(IPage<MailItem> page, Wrapper<MailItem> queryWrapper);
 }

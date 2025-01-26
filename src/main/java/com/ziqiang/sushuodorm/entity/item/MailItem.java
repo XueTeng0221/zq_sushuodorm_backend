@@ -18,33 +18,28 @@ import java.util.Map;
 public class MailItem implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
-
-    private MailProperties mailProperties;
-
+    @TableField(value = "receivers")
     private Map<String, UserItem> receivers;
-
+    @TableField(value = "sender")
     private UserItem sender;
-
+    @TableField(value = "date")
     private Date date;
-
+    @TableField(value = "id")
     private Long id;
-
+    @TableField(value = "userId")
     private Long userId;
-
+    @TableField(value = "senderName")
     private String senderName;
-
+    @TableField(value = "email")
     private String email;
-
+    @TableField(value = "title")
     private String title;
-
+    @TableField(value = "subject")
     private String subject;
-
     @TableLogic
     private Boolean isRead;
-
     @TableLogic
     private Boolean isDeleted;
-
     @TableLogic
     private Boolean isReplied;
 }
