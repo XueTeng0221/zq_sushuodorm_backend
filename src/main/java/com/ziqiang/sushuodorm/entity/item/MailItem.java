@@ -47,4 +47,9 @@ public class MailItem implements Serializable {
 
     @TableLogic
     private Boolean isReplied;
+
+    @TableField
+    private Date createTime;
+    @TableField
+    private Date updateTime;
 }

@@ -1,5 +1,6 @@
 package com.ziqiang.sushuodorm.entity.item;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -20,4 +21,9 @@ public class MsgItem implements Serializable {
     private String author;
 
     private Long id;
+
+    @TableField
+    private Date createTime;
+    @TableField
+    private Date updateTime;
 }

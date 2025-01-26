@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: zq_sushuodorm_backend
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.14.128:3306/OnlineJudge?&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: root
+
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+server:
+  address: 0.0.0.0
+  port: 8101
+  servlet:
+    context-path: /api
+    # cookie 30 ???
+    session:
+      cookie:
+        max-age: 2592000

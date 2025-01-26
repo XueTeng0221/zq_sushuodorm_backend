@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.sql.Date;
 
 @Data
 @TableName(value = "favorite")
@@ -23,7 +23,12 @@ public class FavoriteItem implements Serializable {
 
     private String username;
 
-    private Date date;
+    @TableField
+    private java.sql.Date createTime;
+    @TableField
+    private Date updateTime;
 
     private Boolean isDeleted;
+
+
 }

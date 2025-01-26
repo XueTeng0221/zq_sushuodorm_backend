@@ -9,6 +9,7 @@ import lombok.experimental.Accessors;
 
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
+import java.sql.Date;
 import java.util.Map;
 
 @Data
@@ -28,4 +29,8 @@ public class RoomItem implements Serializable {
     private Integer capacity;
     @TableField(value = "occupants")
     private Map<Integer, UserItem> occupants;
+    @TableField
+    private Date createTime;
+    @TableField
+    private Date updateTime;
 }

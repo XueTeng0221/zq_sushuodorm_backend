@@ -35,4 +35,8 @@ public class CommentItem implements Serializable {
     private Long parentId;
     @TableId(type = IdType.AUTO)
     private Long replyNum;
+    @TableField
+    private Date createTime;
+    @TableField
+    private Date updateTime;
 }
