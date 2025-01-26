@@ -87,11 +87,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
         RoomItem newRoomItem = roomMapper.selectOne(roomUpdateWrapper);
         if (ObjectUtils.isEmpty(newRoomItem)) {
             RoomItem roomItem = new RoomItem().setRoomId(Integer.parseInt(roomId));
-            roomItem.getOccupants().put(userItem.getUserName(), userItem);
+            roomItem.getOccupants().put(Integer.valueOf(userItem.getUserName()), userItem);
             return roomMapper.insert(roomItem) > 0;
         }
         if (newRoomItem.getCapacity() <= newRoomItem.getOccupants().size()) {
-            newRoomItem.getOccupants().put(userItem.getUserName(), userItem);
+            newRoomItem.getOccupants().put(Integer.valueOf(userItem.getUserName()), userItem);
         }
         UpdateWrapper<UserItem> userUpdateWrapper = new UpdateWrapper<UserItem>().eq("user_id", userId);
         return userMapper.update(userItem, userUpdateWrapper) > 0 && roomMapper.update(null, roomWrapper) > 0;
