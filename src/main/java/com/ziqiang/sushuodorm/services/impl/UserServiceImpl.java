@@ -9,6 +9,7 @@ import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.mapper.RoomMapper;
 import com.ziqiang.sushuodorm.mapper.UserMapper;
 import com.ziqiang.sushuodorm.services.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.ObjectUtils;
@@ -31,6 +32,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
     public UserServiceImpl(UserMapper userMapper, RoomMapper roomMapper) {
         this.userMapper = userMapper;
         this.roomMapper = roomMapper;
+    }
+
+    @Override
+    public UserItem getLoginUser(HttpServletRequest request) {
+        QueryWrapper<UserItem> queryWrapper = new QueryWrapper<UserItem>().eq("union_id", request.getParameter("code"));
+        UserItem loginUser = userMapper.selectOne(queryWrapper);
+        return ObjectUtils.isEmpty(loginUser) ? null : loginUser;
     }
 
     @Override
@@ -87,11 +95,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
         RoomItem newRoomItem = roomMapper.selectOne(roomUpdateWrapper);
         if (ObjectUtils.isEmpty(newRoomItem)) {
             RoomItem roomItem = new RoomItem().setRoomId(Integer.parseInt(roomId));
-            roomItem.getOccupants().put(Integer.valueOf(userItem.getUserName()), userItem);
+            roomItem.getOccupants().put(userItem.getUserName(), userItem);
             return roomMapper.insert(roomItem) > 0;
         }
         if (newRoomItem.getCapacity() <= newRoomItem.getOccupants().size()) {
-            newRoomItem.getOccupants().put(Integer.valueOf(userItem.getUserName()), userItem);
+            newRoomItem.getOccupants().put(userItem.getUserName(), userItem);
         }
         UpdateWrapper<UserItem> userUpdateWrapper = new UpdateWrapper<UserItem>().eq("user_id", userId);
         return userMapper.update(userItem, userUpdateWrapper) > 0 && roomMapper.update(null, roomWrapper) > 0;

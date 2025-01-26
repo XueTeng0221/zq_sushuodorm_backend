@@ -21,8 +21,4 @@ public class MsgItem implements Serializable {
     private String author;
     @TableField(value = "id")
     private Long id;
-    @TableField
-    private Date createTime;
-    @TableField
-    private Date updateTime;
 }

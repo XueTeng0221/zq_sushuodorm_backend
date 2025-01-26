@@ -5,6 +5,8 @@ import com.ziqiang.sushuodorm.entity.item.UserItem;
 import jakarta.servlet.http.HttpServletRequest;
 
 public interface UserService extends IService<UserItem> {
+    UserItem getLoginUser(HttpServletRequest request);
+
     String getUserId(String code);
 
     String getRoomId(String username);

@@ -23,9 +23,4 @@ public class LikeCommentItem implements Serializable {
     private Long commentId;
 
     private Long userId;
-
-    @TableField
-    private java.sql.Date createTime;
-    @TableField
-    private java.sql.Date updateTime;
 }

@@ -16,8 +16,6 @@ public class UserItem implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
     @TableField
-    private Date createTime;
-    @TableField
     private Date updateTime;
     @TableField
     private String userAccount;

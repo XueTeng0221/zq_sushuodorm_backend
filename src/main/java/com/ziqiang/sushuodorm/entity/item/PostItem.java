@@ -32,10 +32,8 @@ public class PostItem implements Serializable {
     private Long likes;
     @TableField
     private Long favorites;
+    @TableId(type = IdType.ASSIGN_ID)
+    private Integer id;
     @TableLogic
     private Integer isDeleted;
-    @TableField
-    private Date createTime;
-    @TableField
-    private Date updateTime;
 }
