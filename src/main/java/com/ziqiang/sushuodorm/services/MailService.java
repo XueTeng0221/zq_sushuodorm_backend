@@ -7,16 +7,21 @@ import com.ziqiang.sushuodorm.entity.item.MailItem;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.entity.vo.UserVo;
 
+import java.util.List;
 import java.util.Map;
 
 public interface MailService extends IService<MailItem> {
     boolean save(String userId, Map<String, UserItem> receivers);
 
-    boolean remove(String userId);
+    boolean remove(String mailId);
 
-    boolean update(String userId, String postId);
+    boolean reply(String userId, List<UserItem> receivers);
+
+    boolean update(String postId, String title, String subject);
 
     IPage<MailItem> getItemByUsername(String username, MailQueryRequest queryRequest);
+
+    IPage<UserVo> getReceiverByMailId(String mailId, int currentSize, int pageSize);
 
     IPage<UserVo> getReceiverByUsername(String username, int currentSize, int pageSize);
 }
