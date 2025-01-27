@@ -2,33 +2,28 @@ package com.ziqiang.sushuodorm.services.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.common.ErrorCode;
 import com.ziqiang.sushuodorm.daos.CommentEsDao;
 import com.ziqiang.sushuodorm.entity.dto.comment.CommentQueryRequest;
 import com.ziqiang.sushuodorm.entity.item.CommentItem;
-import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.entity.vo.CommentVo;
-import com.ziqiang.sushuodorm.exception.BizException;
 import com.ziqiang.sushuodorm.exception.NoSuchPostException;
 import com.ziqiang.sushuodorm.mapper.*;
 import com.ziqiang.sushuodorm.services.CommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
-@EqualsAndHashCode(callSuper = false)
-@Data
+@Transactional
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> implements CommentService {
     @Autowired
     private CommentMapper commentMapper;
@@ -43,7 +38,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     @Autowired
     private CommentEsDao commentEsDao;
 
-    private Map<Long, Set<CommentItem>> commentTree;
+    private Map<Long, Set<CommentItem>> commentTree = new HashMap<>();
+    private Deque<CommentItem> commentStack = new ArrayDeque<>();
 
     @Override
     public boolean addComment(Long postId, String username, String content) {
@@ -122,10 +118,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     }
 
     @Override
-    public IPage<CommentVo> getAllComments(CommentQueryRequest queryRequest) {
+    public IPage<CommentVo> getAllComments(String author, CommentQueryRequest queryRequest) {
         return commentMapper.selectPage(
                 queryRequest.getPage(),
-                new QueryChainWrapper<>(commentMapper).eq("post_id", queryRequest.getPostId())
+                new QueryChainWrapper<>(commentMapper).eq("author", author)
         ).convert(commentItem -> new CommentVo()
                 .setId(commentItem.getId())
                 .setContent(commentItem.getContent())
@@ -137,128 +133,70 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     }
 
     @Override
-    public IPage<CommentVo> getAllComments(String username, int pageNum, int pageSize) {
-        try {
-            QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).eq("author", username);
-            List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
-            List<String> tags = commentItems.stream().map(CommentItem::getAuthor).distinct().toList();
-            Map<String, UserItem> userItemMap = userMapper.selectList(new QueryChainWrapper<>(userMapper)
-                    .in("username", tags)).stream().collect(
-                    Collectors.toMap(UserItem::getUserName, v -> v)
-            );
-            commentItems.forEach(commentItem -> userItemMap.get(commentItem.getAuthor())
-                    .setUserName(commentItem.getAuthor()));
-            return commentMapper.selectPage(
-                    new Page<>(pageNum, pageSize), queryWrapper
-            ).convert(commentItem -> new CommentVo()
-                    .setId(commentItem.getId())
-                    .setContent(commentItem.getContent())
-                    .setAuthor(commentItem.getAuthor())
-                    .setDate(commentItem.getDate())
-                    .setLikes(commentItem.getLikes())
-                    .setUserId(commentItem.getId())
-            );
-        } catch (BizException e) {
-            log.error("Error occurred while fetching comments: ", e);
-            throw new NoSuchPostException(ErrorCode.CLIENT_ERROR);
+    public IPage<CommentVo> getAllComments(List<String> keywords, CommentQueryRequest queryRequest) {
+        QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper);
+        if (CollectionUtils.isEmpty(keywords)) {
+            queryWrapper.like("content", keywords);
+        } else {
+            queryWrapper.like("content", keywords.get(0));
+            keywords.forEach(keyword -> queryWrapper.or().like("content", keyword));
         }
-    }
-
-
-    @Override
-    public IPage<CommentVo> getAllReplies(CommentQueryRequest queryRequest) {
-        try {
-            QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("parent_id", queryRequest.getCommentId());
-            List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
-            List<Long> commentIds = commentItems.stream().map(CommentItem::getId).toList();
-            Map<Long, String> userNameMap = commentMapper.selectList(new QueryWrapper<CommentItem>()
-                    .in("id", commentIds))
-                    .stream()
-                    .collect(Collectors.toMap(CommentItem::getId, CommentItem::getAuthor));
-            commentItems.forEach(commentItem -> {
-                String author = userNameMap.getOrDefault(commentItem.getId(), "Unknown");
-                commentItem.setAuthor(author);
-            });
-            return commentMapper.selectPage(
-                    queryRequest.getPage(), queryWrapper
-            ).convert(commentItem -> new CommentVo()
-                    .setId(commentItem.getId())
-                    .setContent(commentItem.getContent())
-                    .setAuthor(commentItem.getAuthor())
-                    .setDate(commentItem.getDate())
-                    .setLikes(commentItem.getLikes())
-                    .setUserId(commentItem.getId())
-            );
-        } catch (BizException e) {
-            log.error("Error occurred while fetching replies: ", e);
-            throw new NoSuchPostException(ErrorCode.CLIENT_ERROR);
-        }
-    }
-
-    @Override
-    public IPage<CommentVo> getAllReplies(Long commentId, int pageNum, int pageSize) {
-        QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).eq("id", commentId);
         List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
-        if (commentItems.isEmpty()) {
-            return new Page<>(pageNum, pageSize).convert(commentItem -> new CommentVo());
+        return commentMapper.selectPage(
+                queryRequest.getPage(),
+                queryWrapper.in("id", commentItems.stream().map(CommentItem::getId).toList())
+        ).convert(commentItem -> new CommentVo()
+                .setId(commentItem.getId())
+                .setContent(commentItem.getContent())
+                .setAuthor(commentItem.getAuthor())
+                .setDate(commentItem.getDate())
+                .setLikes(commentItem.getLikes())
+        );
+    }
+
+    @Override
+    public IPage<CommentVo> getAllReplies(String username, Long commentId, CommentQueryRequest queryRequest) {
+        QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper)
+                .eq("author", username)
+                .eq("id", commentId);
+        commentStack.push(commentMapper.selectOne(queryWrapper));
+        while (!commentStack.isEmpty()) {
+            CommentItem commentItem = commentStack.pop();
+            commentStack.addAll(commentTree.getOrDefault(commentItem.getId(), new HashSet<>()));
+            queryWrapper.or().eq("author", commentItem.getAuthor());
         }
-        List<Long> replyIds = commentItems.stream()
-                .flatMap(commentItem -> Stream.ofNullable(commentItem.getReplyNum()))
-                .distinct().collect(Collectors.toList());
-        Map<Long, String> userNameMap = commentMapper.selectList(new QueryWrapper<CommentItem>()
-                .in("id", replyIds))
-                .stream()
-                .collect(Collectors.toMap(CommentItem::getId, CommentItem::getAuthor));
-        commentItems.forEach(commentItem -> {
-            Long replyId = commentItem.getReplyNum();
-            if (replyId != null) {
-                commentItem.setAuthor(userNameMap.getOrDefault(replyId, "Unknown"));
-            }
-        });
-        return commentMapper.selectPage(
-                new Page<>(pageNum, pageSize), queryWrapper
-        ).convert(commentItem -> new CommentVo()
-                .setId(commentItem.getId())
-                .setContent(commentItem.getContent())
-                .setAuthor(commentItem.getAuthor())
-                .setDate(commentItem.getDate())
-                .setLikes(commentItem.getLikes())
-                .setUserId(commentItem.getId())
-        );
-    }
-
-    @Override
-    public IPage<CommentVo> getAllCommentsByUsername(String username) {
-        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("author", username);
         List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
-        Map<Long, String> userNameMap = commentMapper.selectList(new QueryWrapper<CommentItem>().
-                in("id", commentItems.stream().map(CommentItem::getId).toList())).stream().collect(
-                HashMap::new,
-                (m, v) -> m.put(v.getId(), v.getAuthor()),
-                HashMap::putAll
-        );
-        commentItems.forEach(commentItem -> commentItem.setAuthor(userNameMap.get(commentItem.getId())));
         return commentMapper.selectPage(
-                new CommentQueryRequest().getPage(),
-                new QueryWrapper<CommentItem>().eq("author", username)
+                queryRequest.getPage(),
+                queryWrapper.in("author", commentItems.stream().map(CommentItem::getAuthor).toList())
         ).convert(commentItem -> new CommentVo()
                 .setId(commentItem.getId())
                 .setContent(commentItem.getContent())
                 .setAuthor(commentItem.getAuthor())
                 .setDate(commentItem.getDate())
                 .setLikes(commentItem.getLikes())
-                .setUserId(commentItem.getId())
         );
     }
 
     @Override
-    public IPage<CommentVo> getAllRepliesByUsername(String replierName, String username) {
+    public int getReplyCount(Long commentId, Long postId) {
+        QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper)
+                .eq("post_id", postId);
+        return commentMapper.selectOne(queryWrapper).getReplies().size();
+    }
+
+    @Override
+    public IPage<CommentVo> getAllReplies(String replierName, String username, CommentQueryRequest queryRequest) {
         QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).eq("author", replierName);
+        commentStack.push(commentMapper.selectOne(queryWrapper));
+        while (!commentStack.isEmpty()) {
+            CommentItem commentItem = commentStack.pop();
+            commentStack.addAll(commentTree.getOrDefault(commentItem.getId(), new HashSet<>()));
+            queryWrapper.or().eq("author", commentItem.getAuthor());
+        }
         List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
-        List<Long> replyIds = commentItems.stream().map(CommentItem::getReplyNum).distinct().toList();
-        List<CommentItem> relatedComments = commentMapper.selectList(new QueryWrapper<CommentItem>().in("id", replyIds));
+        List<CommentItem> relatedComments = commentMapper.selectList(new QueryChainWrapper<>(commentMapper)
+                .allEq(Map.of("author", username, "reply_num", commentItems.stream().map(CommentItem::getId).toList())));
         Map<String, Map<Long, CommentItem>> userCommentMap = relatedComments.stream()
                 .collect(Collectors.groupingBy(CommentItem::getAuthor,
                     Collectors.toMap(CommentItem::getPostId, Function.identity(),
@@ -285,7 +223,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     }
 
     @Override
-    public List<CommentItem> findComments(CommentQueryRequest queryRequest, Long postId) {
+    public List<CommentItem> findComments(Long postId, CommentQueryRequest queryRequest) {
         return commentMapper.selectList(
                 new QueryWrapper<CommentItem>()
                         .eq("post_id", postId)

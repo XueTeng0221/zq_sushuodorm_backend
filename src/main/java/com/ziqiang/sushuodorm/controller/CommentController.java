@@ -1,6 +1,7 @@
 package com.ziqiang.sushuodorm.controller;
 
 import com.ziqiang.sushuodorm.entity.dto.comment.CommentQueryRequest;
+import com.ziqiang.sushuodorm.entity.item.CommentItem;
 import com.ziqiang.sushuodorm.entity.vo.CommentVo;
 import com.ziqiang.sushuodorm.services.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,25 +50,45 @@ public class CommentController {
 
     @Operation(summary = "获取所有评论")
     @GetMapping("getAllComments")
-    public List<CommentVo> getAllComments(@RequestBody CommentQueryRequest queryRequest) {
-        return commentService.getAllComments(queryRequest).getRecords();
+    public List<CommentVo> getAllComments(@RequestParam String author, @RequestBody CommentQueryRequest queryRequest) {
+        return commentService.getAllComments(author, queryRequest).getRecords();
+    }
+
+    @Operation(summary = "由关键词获取所有评论")
+    @GetMapping("getAllCommentsByKeywords")
+    public List<CommentVo> getAllCommentsByKeywords(@RequestParam List<String> keywords, @RequestBody CommentQueryRequest queryRequest) {
+        return commentService.getAllComments(keywords, queryRequest).getRecords();
     }
 
     @Operation(summary = "获取所有回复")
     @GetMapping("getAllReplies")
-    public List<CommentVo> getAllReplies(@RequestBody CommentQueryRequest queryRequest) {
-        return commentService.getAllReplies(queryRequest).getRecords();
+    public List<CommentVo> getAllReplies(@RequestParam String username,
+                                         @RequestParam Long commentId, @RequestBody CommentQueryRequest queryRequest) {
+        return commentService.getAllReplies(username, commentId, queryRequest).getRecords();
+    }
+
+    @Operation(summary = "获取用户回复")
+    @GetMapping("getAllRepliesByUser")
+    public List<CommentVo> getAllRepliesByUser(@RequestParam String replierName,
+                                               @RequestParam String username, @RequestBody CommentQueryRequest queryRequest) {
+        return commentService.getAllReplies(replierName, username, queryRequest).getRecords();
+    }
+
+    @Operation(summary = "获取评论")
+    @GetMapping("getAllComments")
+    public List<CommentItem> getAllComments(@RequestParam Long postId, @RequestBody CommentQueryRequest queryRequest) {
+        return commentService.findComments(postId, queryRequest);
     }
 
     @Operation(summary = "获取用户的所有评论")
     @GetMapping("getAllCommentsByUsername")
-    public List<CommentVo> getAllCommentsByUsername(@RequestParam String username) {
-        return commentService.getAllCommentsByUsername(username).getRecords();
+    public List<CommentItem> getAllCommentsByUsername(@RequestParam String username) {
+        return commentService.findCommentsByUsername(username);
     }
 
-    @Operation(summary = "获取用户的所有回复")
-    @GetMapping("getAllRepliesByUsername")
-    public List<CommentVo> getAllRepliesByUsername(@RequestParam String replierName, @RequestParam String username) {
-        return commentService.getAllRepliesByUsername(replierName, username).getRecords();
+    @Operation(summary = "获取评论回复数")
+    @GetMapping("getReplyCount")
+    public int getReplyCount(@RequestParam Long commentId, @RequestParam Long postId) {
+        return commentService.getReplyCount(commentId, postId);
     }
 }

@@ -20,19 +20,17 @@ public interface CommentService extends IService<CommentItem> {
 
     CommentVo getComment(Long commentId);
 
-    IPage<CommentVo> getAllComments(CommentQueryRequest queryRequest);
+    IPage<CommentVo> getAllComments(String author, CommentQueryRequest queryRequest);
 
-    IPage<CommentVo> getAllComments(String username, int pageNum, int pageId);
+    IPage<CommentVo> getAllComments(List<String> keywords, CommentQueryRequest queryRequest);
 
-    IPage<CommentVo> getAllReplies(CommentQueryRequest queryRequest);
+    IPage<CommentVo> getAllReplies(String username, Long commentId, CommentQueryRequest queryRequest);
 
-    IPage<CommentVo> getAllReplies(Long commentId, int pageNum, int pageId);
+    IPage<CommentVo> getAllReplies(String replierName, String username, CommentQueryRequest queryRequest);
 
-    IPage<CommentVo> getAllCommentsByUsername(String username);
+    int getReplyCount(Long commentId, Long postId);
 
-    IPage<CommentVo> getAllRepliesByUsername(String replierName, String username);
-
-    List<CommentItem> findComments(CommentQueryRequest queryRequest, Long postId);
+    List<CommentItem> findComments(Long postId, CommentQueryRequest queryRequest);
 
     List<CommentItem> findCommentsByUsername(String username);
 }

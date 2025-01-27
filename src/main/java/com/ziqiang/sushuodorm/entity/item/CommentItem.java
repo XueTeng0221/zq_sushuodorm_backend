@@ -19,19 +19,19 @@ public class CommentItem implements Serializable {
     private static final long serialVersionUID = 1L;
     @TableField
     private Set<CommentItem> replies;
-    @TableField
+    @TableField(value = "content")
     private String content;
-    @TableField
+    @TableField(value = "author")
     private String author;
-    @TableField
+    @TableField(value = "date")
     private Date date;
-    @TableField
+    @TableField(value = "likes")
     private Long likes;
-    @TableField
+    @TableField(value = "post_id")
     private Long postId;
     @TableId(type = IdType.AUTO)
     private Long id;
-    @TableField
+    @TableField(value = "parent_id")
     private Long parentId;
     @TableId(type = IdType.AUTO)
     private Long replyNum;

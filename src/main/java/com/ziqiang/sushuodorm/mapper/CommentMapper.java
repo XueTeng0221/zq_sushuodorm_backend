@@ -15,4 +15,8 @@ public interface CommentMapper extends BaseMapper<CommentItem> {
     List<CommentItem> listCommentByPage(IPage<CommentItem> page, Wrapper<CommentItem> queryWrapper);
 
     List<CommentItem> listCommentByTags(List<String> tags);
+
+    Long getReplies(Long commentId, Long postId);
+
+    Long getReplies(String replierName, String userName, Long postId);
 }
