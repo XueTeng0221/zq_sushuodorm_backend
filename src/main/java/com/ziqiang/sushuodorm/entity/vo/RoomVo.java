@@ -11,7 +11,7 @@ import java.util.Map;
 @Accessors(chain = true)
 public class RoomVo implements Serializable {
     private static final long serialVersionUID = 1L;
-    private Map<Integer, UserItem> occupantMap;
+    private Map<String, UserItem> occupantMap;
     private String dormName;
     private String roomName;
     private Integer roomId;

@@ -19,15 +19,15 @@ public interface RoomService extends IService<RoomItem> {
 
     boolean removeRoom(String roomId);
 
-    IPage<RoomVo> getPage(int pageNum, int pageId);
+    IPage<RoomVo> searchByOccupant(String occupant, RoomQueryRequest roomQueryRequest);
 
-    IPage<RoomVo> searchByOccupant(String occupant, int pageNum, int pageId);
+    IPage<RoomVo> searchByRoomId(String roomId, RoomQueryRequest roomQueryRequest);
 
-    IPage<RoomVo> searchByRoomId(String roomId, int pageNum, int pageId);
+    IPage<RoomVo> searchByRoomName(String roomName, RoomQueryRequest roomQueryRequest);
 
     IPage<RoomVo> getAllRooms(RoomQueryRequest roomQueryRequest);
 
-    IPage<RoomVo> getRoomsByOccupants(List<String> occupants, int pageNum, int pageId);
+    IPage<RoomVo> getRoomsByOccupants(List<String> occupants, RoomQueryRequest roomQueryRequest);
 
-    IPage<UserVo> getOccupantsByRoomId(String roomId, int pageNum, int pageId);
+    IPage<UserVo> getOccupantsByRoomId(String roomId, RoomQueryRequest roomQueryRequest);
 }

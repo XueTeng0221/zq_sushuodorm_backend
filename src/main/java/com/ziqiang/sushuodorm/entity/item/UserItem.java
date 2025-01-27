@@ -15,27 +15,27 @@ import java.sql.Date;
 public class UserItem implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
-    @TableField
+    @TableField(value = "update_time")
     private Date updateTime;
     @TableField
     private String userAccount;
     @TableField
     private String userPassword;
-    @TableField
+    @TableField(value = "union_id")
     private String unionId;
-    @TableField
+    @TableField(value = "username")
     private String userName;
-    @TableField
+    @TableField(value = "avatar_url")
     private String userAvatar;
-    @TableField
+    @TableField(value = "profile")
     private String userProfile;
-    @TableField
+    @TableField(value = "role")
     private String userRole;
-    @TableField
+    @TableField(value = "gender")
     private String gender;
-    @TableField
+    @TableField(value = "phone")
     private String phone;
-    @TableField
+    @TableField(value = "room_id")
     private String roomId;
     @TableLogic
     public Boolean isDeleted;

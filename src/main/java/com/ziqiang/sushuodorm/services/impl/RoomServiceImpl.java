@@ -1,17 +1,23 @@
 package com.ziqiang.sushuodorm.services.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.entity.dto.room.RoomQueryRequest;
 import com.ziqiang.sushuodorm.entity.dto.user.UserUpdateRequest;
 import com.ziqiang.sushuodorm.entity.item.RoomItem;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
+import com.ziqiang.sushuodorm.entity.vo.RoomVo;
+import com.ziqiang.sushuodorm.entity.vo.UserVo;
 import com.ziqiang.sushuodorm.mapper.RoomMapper;
 import com.ziqiang.sushuodorm.mapper.UserMapper;
 import com.ziqiang.sushuodorm.services.RoomService;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -36,8 +42,7 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, RoomItem> implement
                 .setDormName(roomName.substring(0, roomName.indexOf("-")));
         roomMapper.insert(roomItem);
         for (Map.Entry<String, UserItem> entry : occupants.entrySet()) {
-            UserItem userItem = entry.getValue();
-            userItem.setRoomId(roomName.substring(roomName.indexOf("-") + 1));
+            entry.getValue().setRoomId(roomName.substring(roomName.indexOf("-") + 1));
         }
         return saveOrUpdate(roomItem);
     }
@@ -66,5 +71,82 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, RoomItem> implement
             userMapper.updateById(userItem);
         }
         return roomMapper.delete(roomWrapper) > 0 && userMapper.update(null, userWrapper) > 0;
+    }
+
+    @Override
+    public IPage<RoomVo> getAllRooms(RoomQueryRequest roomQueryRequest) {
+        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper)
+                .like("roomName", roomQueryRequest.getRoomName());
+        if (!CollectionUtils.isEmpty(roomQueryRequest.getOccupants())) {
+            for (Map.Entry<String, UserItem> entry : roomQueryRequest.getOccupants().entrySet()) {
+                queryWrapper.like("occupants", entry.getValue().getUserName());
+            }
+        }
+        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
+                .convert(roomItem -> new RoomVo()
+                        .setOccupantMap(roomItem.getOccupants())
+                        .setDormName(roomItem.getDormName())
+                        .setRoomName(roomItem.getRoomName()));
+    }
+
+    @Override
+    public IPage<RoomVo> getRoomsByOccupants(List<String> occupants, RoomQueryRequest roomQueryRequest) {
+        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper)
+                .like("roomName", roomQueryRequest.getRoomName());
+        if (!CollectionUtils.isEmpty(roomQueryRequest.getOccupants())) {
+            Map<String, UserItem> occupantMap = roomQueryRequest.getOccupants();
+            if (occupantMap.keySet().containsAll(occupants)) {
+                occupantMap.forEach((key, value) -> queryWrapper.like("occupantName", key));
+            }
+        }
+        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
+                .convert(roomItem -> new RoomVo()
+                        .setOccupantMap(roomItem.getOccupants())
+                        .setDormName(roomItem.getDormName())
+                        .setRoomName(roomItem.getRoomName()));
+    }
+
+    @Override
+    public IPage<UserVo> getOccupantsByRoomId(String roomId, RoomQueryRequest roomQueryRequest) {
+        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper)
+                .eq("room_id", roomId);
+        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
+                .convert(roomItem -> new UserVo().setRoomId(roomId));
+    }
+
+    @Override
+    public IPage<RoomVo> searchByOccupant(String occupant, RoomQueryRequest roomQueryRequest) {
+        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper);
+        if (!CollectionUtils.isEmpty(roomQueryRequest.getOccupants()) && roomQueryRequest.getOccupants().containsKey(occupant)) {
+            return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
+                    .convert(roomItem -> new RoomVo()
+                            .setOccupantMap(roomItem.getOccupants())
+                            .setDormName(roomItem.getDormName())
+                            .setRoomName(roomItem.getRoomName()));
+        }
+        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
+                .convert(roomItem -> new RoomVo());
+    }
+
+    @Override
+    public IPage<RoomVo> searchByRoomId(String roomId, RoomQueryRequest roomQueryRequest) {
+        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper)
+                .eq("roomId", Integer.parseInt(roomId.substring(roomId.indexOf("-") + 1)));
+        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
+                .convert(roomItem -> new RoomVo()
+                        .setOccupantMap(roomItem.getOccupants())
+                        .setDormName(roomItem.getDormName())
+                );
+    }
+
+    @Override
+    public IPage<RoomVo> searchByRoomName(String roomName, RoomQueryRequest roomQueryRequest) {
+        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper)
+                .like("roomName", roomName);
+        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
+                .convert(roomItem -> new RoomVo()
+                        .setOccupantMap(roomItem.getOccupants())
+                        .setDormName(roomItem.getDormName())
+                );
     }
 }
