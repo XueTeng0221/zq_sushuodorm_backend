@@ -10,13 +10,11 @@ import java.util.List;
 
 public interface CommentService extends IService<CommentItem> {
 
-    boolean addComment(Long postId, Long userId, String content);
+    boolean addComment(Long postId, String username, String content);
 
-    boolean addReply(Long commentId, Long userId, String content);
+    boolean addReply(Long commentId, String username, String content);
 
     boolean likeComment(Long commentId);
-
-    boolean deleteComment(Long commentId);
 
     boolean deleteComment(Long commentId, Long postId);
 
@@ -24,7 +22,7 @@ public interface CommentService extends IService<CommentItem> {
 
     IPage<CommentVo> getAllComments(CommentQueryRequest queryRequest);
 
-    IPage<CommentVo> getAllComments(String userName, int pageNum, int pageId);
+    IPage<CommentVo> getAllComments(String username, int pageNum, int pageId);
 
     IPage<CommentVo> getAllReplies(CommentQueryRequest queryRequest);
 

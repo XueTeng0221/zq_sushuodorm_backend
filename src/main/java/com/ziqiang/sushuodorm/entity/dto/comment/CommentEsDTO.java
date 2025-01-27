@@ -19,29 +19,7 @@ public class CommentEsDTO implements Serializable {
     private Long likes;
     private Long favorites;
     private Long userId;
+    private Long postId;
+    private Long commentId;
     private Boolean isDelete;
-
-    public static CommentEsDTO objectToDTO(CommentItem commentItem) {
-        if (commentItem == null) {
-            return null;
-        }
-        CommentEsDTO commentEsDTO = new CommentEsDTO();
-        BeanUtils.copyProperties(commentItem, commentEsDTO);
-        if (StringUtils.isNotBlank(commentItem.getDate().toString())) {
-            commentEsDTO.setDate(commentItem.getDate());
-        }
-        return commentEsDTO;
-    }
-
-    public static CommentItem dtoToObject(CommentEsDTO commentEsDTO) {
-        if (commentEsDTO == null) {
-            return null;
-        }
-        CommentItem commentItem = new CommentItem();
-        BeanUtils.copyProperties(commentEsDTO, commentItem);
-        if (commentEsDTO.getDate() != null) {
-            commentItem.setDate(commentEsDTO.getDate());
-        }
-        return commentItem;
-    }
 }

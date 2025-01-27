@@ -2,18 +2,19 @@ package com.ziqiang.sushuodorm.services.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
+import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.common.ErrorCode;
+import com.ziqiang.sushuodorm.daos.CommentEsDao;
 import com.ziqiang.sushuodorm.entity.dto.comment.CommentQueryRequest;
 import com.ziqiang.sushuodorm.entity.item.CommentItem;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.entity.vo.CommentVo;
 import com.ziqiang.sushuodorm.exception.BizException;
 import com.ziqiang.sushuodorm.exception.NoSuchPostException;
-import com.ziqiang.sushuodorm.mapper.CommentMapper;
-import com.ziqiang.sushuodorm.mapper.PostMapper;
-import com.ziqiang.sushuodorm.mapper.UserMapper;
+import com.ziqiang.sushuodorm.mapper.*;
 import com.ziqiang.sushuodorm.services.CommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,69 +30,77 @@ import java.util.stream.Stream;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> implements CommentService {
+    @Autowired
     private CommentMapper commentMapper;
+    @Autowired
     private UserMapper userMapper;
+    @Autowired
     private PostMapper postMapper;
-    private Map<Long, Set<CommentItem>> commentTree = new HashMap<>();
-    
-    public CommentServiceImpl(CommentMapper commentMapper, UserMapper userMapper, PostMapper postMapper) {
-        this.commentMapper = commentMapper;
-        this.userMapper = userMapper;
-        this.postMapper = postMapper;
-    }
+    @Autowired
+    private LikeCommentMapper likeCommentMapper;
+    @Autowired
+    private LikePostMapper likePostMapper;
+    @Autowired
+    private CommentEsDao commentEsDao;
+
+    private Map<Long, Set<CommentItem>> commentTree;
 
     @Override
-    public boolean addComment(Long postId, Long userId, String content) {
+    public boolean addComment(Long postId, String username, String content) {
         CommentItem commentItem = new CommentItem()
+                .setAuthor(username)
                 .setPostId(postId)
-                .setId(userId)
                 .setParentId(-1L)
                 .setContent(content)
                 .setReplies(new HashSet<>());
         commentMapper.insert(commentItem);
         commentTree.put(commentItem.getId(), new HashSet<>());
-        return saveOrUpdate(commentItem);
+        return commentMapper.insertOrUpdate(commentItem);
     }
 
     @Override
-    public boolean addReply(Long commentId, Long userId, String content) {
-        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", commentId);
-        CommentItem commentItem = commentMapper.selectById(commentId);
-        CommentItem replyItem = new CommentItem()
-                .setId(commentId + 1)
-                .setParentId(commentId)
-                .setContent(content)
-                .setReplies(new HashSet<>());
-        commentItem.setReplyNum(commentItem.getReplyNum() + 1);
-        commentMapper.insert(replyItem);
-        commentTree.get(commentItem.getId()).add(replyItem);
-        commentTree.put(replyItem.getId(), new HashSet<>());
-        return saveOrUpdate(commentItem);
+    public boolean addReply(Long commentId, String username, String content) {
+        QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).eq("id", commentId);
+        CommentItem commentItem = queryWrapper.getEntity();
+        try {
+            CommentItem replyItem = new CommentItem()
+                    .setId(commentId + 1)
+                    .setAuthor(username)
+                    .setParentId(commentId)
+                    .setContent(content)
+                    .setReplies(new HashSet<>());
+            commentItem.setReplyNum(commentItem.getReplyNum() + 1);
+            commentMapper.insert(replyItem);
+            commentTree.get(commentItem.getId()).add(replyItem);
+            commentTree.put(replyItem.getId(), new HashSet<>());
+            return commentMapper.insertOrUpdate(replyItem);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override
     public boolean likeComment(Long commentId) {
-        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", commentId);
-        CommentItem commentItem = commentMapper.selectById(commentId);
+        QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).eq("id", commentId);
+        CommentItem commentItem = commentMapper.selectOne(queryWrapper);
         commentItem.setLikes(commentItem.getLikes() + 1);
         return commentMapper.updateById(commentItem) > 0;
     }
 
     @Override
-    public boolean deleteComment(Long commentId) {
-        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", commentId);
-        return commentMapper.delete(queryWrapper) > 0;
-    }
-
-    @Override
     public boolean deleteComment(Long commentId, Long postId) {
-        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", commentId).eq("post_id", postId);
-        CommentItem commentItem = commentMapper.selectById(commentId);
-        commentItem.setPostId(postId);
+        QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper)
+                .eq("id", commentId)
+                .eq("post_id", postId);
+        if (ObjectUtils.isNull(commentMapper.selectById(commentId))) {
+            throw new NoSuchPostException(ErrorCode.CLIENT_ERROR);
+        }
+        CommentItem commentItem = commentMapper.selectOne(queryWrapper);
+        commentItem.getReplies().forEach(item -> item.setParentId(-1L));
+        commentTree.get(commentItem.getId()).clear();
+        if (commentItem.getParentId() != -1L) {
+            commentTree.get(commentItem.getParentId()).remove(commentItem);
+        }
         return commentMapper.deleteById(commentItem) > 0;
     }
 
@@ -103,9 +112,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
             throw new NoSuchPostException(ErrorCode.CLIENT_ERROR);
         }
         CommentItem commentItem = commentMapper.selectById(commentId);
-        if (commentItem.getParentId() != -1) {
-            commentItem.setReplies(commentTree.get(commentItem.getParentId()));
-        }
         return new CommentVo()
                 .setId(commentItem.getId())
                 .setContent(commentItem.getContent())
@@ -119,8 +125,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     public IPage<CommentVo> getAllComments(CommentQueryRequest queryRequest) {
         return commentMapper.selectPage(
                 queryRequest.getPage(),
-                new QueryWrapper<CommentItem>().
-                        eq("post_id", queryRequest.getPostId())
+                new QueryChainWrapper<>(commentMapper).eq("post_id", queryRequest.getPostId())
         ).convert(commentItem -> new CommentVo()
                 .setId(commentItem.getId())
                 .setContent(commentItem.getContent())
@@ -132,17 +137,17 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     }
 
     @Override
-    public IPage<CommentVo> getAllComments(String userName, int pageNum, int pageSize) {
+    public IPage<CommentVo> getAllComments(String username, int pageNum, int pageSize) {
         try {
-            QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("author", userName);
+            QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).eq("author", username);
             List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
             List<String> tags = commentItems.stream().map(CommentItem::getAuthor).distinct().toList();
-            Map<String, UserItem> userItemMap = userMapper.selectList(new QueryWrapper<UserItem>()
-                    .in("user_name", tags)).stream().collect(
+            Map<String, UserItem> userItemMap = userMapper.selectList(new QueryChainWrapper<>(userMapper)
+                    .in("username", tags)).stream().collect(
                     Collectors.toMap(UserItem::getUserName, v -> v)
             );
-            commentItems.forEach(commentItem -> userItemMap.get(commentItem.getAuthor()).setUserName(commentItem.getAuthor()));
+            commentItems.forEach(commentItem -> userItemMap.get(commentItem.getAuthor())
+                    .setUserName(commentItem.getAuthor()));
             return commentMapper.selectPage(
                     new Page<>(pageNum, pageSize), queryWrapper
             ).convert(commentItem -> new CommentVo()
@@ -193,16 +198,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
 
     @Override
     public IPage<CommentVo> getAllReplies(Long commentId, int pageNum, int pageSize) {
-        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", commentId);
+        QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).eq("id", commentId);
         List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
         if (commentItems.isEmpty()) {
             return new Page<>(pageNum, pageSize).convert(commentItem -> new CommentVo());
         }
         List<Long> replyIds = commentItems.stream()
                 .flatMap(commentItem -> Stream.ofNullable(commentItem.getReplyNum()))
-                .distinct()
-                .collect(Collectors.toList());
+                .distinct().collect(Collectors.toList());
         Map<Long, String> userNameMap = commentMapper.selectList(new QueryWrapper<CommentItem>()
                 .in("id", replyIds))
                 .stream()
@@ -252,20 +255,16 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
 
     @Override
     public IPage<CommentVo> getAllRepliesByUsername(String replierName, String username) {
-        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("author", replierName);
+        QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).eq("author", replierName);
         List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
-        if (commentItems.isEmpty()) {
-            return new Page<>();
-        }
         List<Long> replyIds = commentItems.stream().map(CommentItem::getReplyNum).distinct().toList();
         List<CommentItem> relatedComments = commentMapper.selectList(new QueryWrapper<CommentItem>().in("id", replyIds));
         Map<String, Map<Long, CommentItem>> userCommentMap = relatedComments.stream()
-                .collect(Collectors.groupingBy(
-                    CommentItem::getAuthor,
-                    Collectors.toMap(CommentItem::getPostId, Function.identity(), (existing, replacement) -> existing)
+                .collect(Collectors.groupingBy(CommentItem::getAuthor,
+                    Collectors.toMap(CommentItem::getPostId, Function.identity(),
+                            (existing, replacement) -> existing)
                 ));
-        Map<Long, CommentItem> userNameMap = userCommentMap.getOrDefault(username, Collections.emptyMap());
+        Map<Long, CommentItem> userNameMap = userCommentMap.getOrDefault(username, new HashMap<>());
         commentItems.forEach(commentItem -> {
             CommentItem relatedComment = userNameMap.get(commentItem.getReplyNum());
             if (!commentTree.get(relatedComment.getId()).isEmpty()) {

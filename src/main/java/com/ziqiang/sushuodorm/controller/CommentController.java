@@ -1,9 +1,8 @@
 package com.ziqiang.sushuodorm.controller;
 
-import com.ziqiang.sushuodorm.entity.item.CommentItem;
-import com.ziqiang.sushuodorm.services.CommentService;
 import com.ziqiang.sushuodorm.entity.dto.comment.CommentQueryRequest;
 import com.ziqiang.sushuodorm.entity.vo.CommentVo;
+import com.ziqiang.sushuodorm.services.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,15 +19,14 @@ public class CommentController {
 
     @Operation(summary = "添加评论")
     @PostMapping("comment")
-    public boolean addComment(@RequestParam Long postId, @RequestParam Long userId,
-                              @RequestBody CommentItem parent, @RequestParam String content) {
-        return commentService.addComment(postId, userId, content);
+    public boolean addComment(@RequestParam Long postId, @RequestParam String username, @RequestParam String content) {
+        return commentService.addComment(postId, username, content);
     }
 
     @Operation(summary = "添加回复")
     @PostMapping("reply")
-    public boolean addReply(@RequestParam Long commentId, @RequestParam Long userId, @RequestParam String content) {
-        return commentService.addReply(commentId, userId, content);
+    public boolean addReply(@RequestParam Long commentId, @RequestParam String username, @RequestParam String content) {
+        return commentService.addReply(commentId, username, content);
     }
 
     @Operation(summary = "点赞评论")
@@ -39,8 +37,8 @@ public class CommentController {
 
     @Operation(summary = "删除评论")
     @DeleteMapping("delete")
-    public boolean deleteComment(@RequestParam Long commentId) {
-        return commentService.deleteComment(commentId);
+    public boolean deleteComment(@RequestParam Long commentId, @RequestParam Long postId) {
+        return commentService.deleteComment(commentId, postId);
     }
 
     @Operation(summary = "获取评论")
