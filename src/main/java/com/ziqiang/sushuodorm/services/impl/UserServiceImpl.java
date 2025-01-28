@@ -84,19 +84,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
 
     @Override
     public boolean updateRoomId(String userId, String roomId) {
-        QueryChainWrapper<UserItem> queryWrapper = new QueryChainWrapper<>(userMapper).eq("user_id", userId);
-        UserItem userItem = userMapper.selectOne(queryWrapper);
+        LambdaQueryChainWrapper<UserItem> userWrapper = new QueryChainWrapper<>(userMapper).lambda()
+                .eq(UserItem::getUserName, userId);
+        UserItem userItem = userMapper.selectOne(userWrapper);
         if (userItem.getRoomId().equals(roomId)) {
             return false;
         }
-        QueryChainWrapper<RoomItem> roomWrapper = new QueryChainWrapper<>(roomMapper).eq("room_id", userItem.getRoomId());
-        if (roomWrapper.exists()) {
-            RoomItem roomItem = roomMapper.selectOne(roomWrapper);
-            roomItem.getOccupants().remove(userItem.getUserName());
-        }
         LambdaUpdateChainWrapper<RoomItem> roomUpdateWrapper = new UpdateChainWrapper<>(roomMapper).lambda()
-                .eq(RoomItem::getRoomId, roomId)
-                .setSql("occupants = concat(occupants, '" + userItem.getUserName() + "')");
+                .eq(RoomItem::getRoomId, roomId);
         RoomItem newRoomItem = roomMapper.selectOne(roomUpdateWrapper);
         if (ObjectUtils.isEmpty(newRoomItem)) {
             RoomItem roomItem = new RoomItem().setRoomId(Integer.parseInt(roomId.substring(roomId.indexOf("-") + 1)));
@@ -108,7 +103,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
         }
         LambdaUpdateChainWrapper<UserItem> userUpdateWrapper = new UpdateChainWrapper<>(userMapper).lambda()
                 .eq(UserItem::getUserName, userId);
-        return userMapper.update(userItem, userUpdateWrapper) > 0 && roomMapper.update(null, roomWrapper) > 0;
+        return userMapper.update(userItem, userUpdateWrapper) > 0 && roomMapper.update(null, roomUpdateWrapper) > 0;
     }
 
     @Override
