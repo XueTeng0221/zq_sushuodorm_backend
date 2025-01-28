@@ -1,8 +1,9 @@
 package com.ziqiang.sushuodorm.services.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
+import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
+import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.entity.item.RoomItem;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
@@ -36,49 +37,54 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
 
     @Override
     public UserItem getLoginUser(HttpServletRequest request) {
-        QueryWrapper<UserItem> queryWrapper = new QueryWrapper<UserItem>().eq("union_id", request.getParameter("code"));
+        LambdaQueryChainWrapper<UserItem> queryWrapper = new QueryChainWrapper<>(userMapper).lambda()
+                .eq(UserItem::getUnionId, request.getParameter("code"));
         UserItem loginUser = userMapper.selectOne(queryWrapper);
         return ObjectUtils.isEmpty(loginUser) ? null : loginUser;
     }
 
     @Override
     public String getUserId(String code) {
-        QueryWrapper<UserItem> queryWrapper = new QueryWrapper<UserItem>().eq("union_id", code);
+        LambdaQueryChainWrapper<UserItem> queryWrapper = new QueryChainWrapper<>(userMapper).lambda()
+                .eq(UserItem::getUnionId, code);
         UserItem userItem = userMapper.selectOne(queryWrapper);
         return ObjectUtils.isEmpty(userItem) ? null : userItem.getUserName();
     }
 
     @Override
     public String getRoomId(String username) {
-        QueryWrapper<UserItem> queryWrapper = new QueryWrapper<UserItem>().eq("user_id", username);
+        LambdaQueryChainWrapper<UserItem> queryWrapper = new QueryChainWrapper<>(userMapper).lambda()
+                .eq(UserItem::getUserName, username);
         UserItem userItem = userMapper.selectOne(queryWrapper);
         return ObjectUtils.isEmpty(userItem) ? null : userItem.getRoomId();
     }
 
     @Override
     public boolean updateUserPhone(String userId, String phone) {
-        UserItem userItem = new UserItem().setPhone(phone);
-        UpdateWrapper<UserItem> updateWrapper = new UpdateWrapper<UserItem>().eq("user_id", userId);
-        return userMapper.update(userItem, updateWrapper) > 0;
+        LambdaUpdateChainWrapper<UserItem> updateWrapper = new UpdateChainWrapper<>(userMapper).lambda()
+                .eq(UserItem::getUserName, userId);
+        return userMapper.update(userMapper.selectOne(updateWrapper).setPhone(phone), updateWrapper) > 0;
     }
 
     @Override
     public boolean updateUserProfile(String userId, String gender, String avatar) {
-        UserItem userItem = new UserItem().setGender(gender).setUserAvatar(avatar);
-        UpdateWrapper<UserItem> updateWrapper = new UpdateWrapper<UserItem>().eq("user_id", userId);
-        return userMapper.update(userItem, updateWrapper) > 0;
+        LambdaUpdateChainWrapper<UserItem> updateWrapper = new UpdateChainWrapper<>(userMapper).lambda()
+                .eq(UserItem::getUserName, userId);
+        return userMapper.update(userMapper.selectOne(updateWrapper)
+                .setGender(gender)
+                .setUserAvatar(avatar), updateWrapper) > 0;
     }
 
     @Override
     public boolean updateUserName(String userId, String name) {
-        UserItem userItem = new UserItem().setUserName(name);
-        UpdateWrapper<UserItem> updateWrapper = new UpdateWrapper<UserItem>().eq("user_id", userId);
-        return userMapper.update(userItem, updateWrapper) > 0;
+        LambdaUpdateChainWrapper<UserItem> updateWrapper = new UpdateChainWrapper<>(userMapper).lambda()
+                .eq(UserItem::getUserName, userId);
+        return userMapper.update(userMapper.selectOne(updateWrapper).setUserName(name), updateWrapper) > 0;
     }
 
     @Override
     public boolean updateRoomId(String userId, String roomId) {
-        QueryWrapper<UserItem> queryWrapper = new QueryWrapper<UserItem>().eq("user_id", userId);
+        QueryChainWrapper<UserItem> queryWrapper = new QueryChainWrapper<>(userMapper).eq("user_id", userId);
         UserItem userItem = userMapper.selectOne(queryWrapper);
         if (userItem.getRoomId().equals(roomId)) {
             return false;
@@ -87,10 +93,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
         if (roomWrapper.exists()) {
             RoomItem roomItem = roomMapper.selectOne(roomWrapper);
             roomItem.getOccupants().remove(userItem.getUserName());
-            roomMapper.updateById(roomItem);
         }
-        UpdateWrapper<RoomItem> roomUpdateWrapper = new UpdateWrapper<RoomItem>()
-                .eq("room_id", roomId)
+        LambdaUpdateChainWrapper<RoomItem> roomUpdateWrapper = new UpdateChainWrapper<>(roomMapper).lambda()
+                .eq(RoomItem::getRoomId, roomId)
                 .setSql("occupants = concat(occupants, '" + userItem.getUserName() + "')");
         RoomItem newRoomItem = roomMapper.selectOne(roomUpdateWrapper);
         if (ObjectUtils.isEmpty(newRoomItem)) {
@@ -101,7 +106,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
         if (newRoomItem.getCapacity() <= newRoomItem.getOccupants().size()) {
             newRoomItem.getOccupants().put(userItem.getUserName(), userItem);
         }
-        UpdateWrapper<UserItem> userUpdateWrapper = new UpdateWrapper<UserItem>().eq("user_id", userId);
+        LambdaUpdateChainWrapper<UserItem> userUpdateWrapper = new UpdateChainWrapper<>(userMapper).lambda()
+                .eq(UserItem::getUserName, userId);
         return userMapper.update(userItem, userUpdateWrapper) > 0 && roomMapper.update(null, roomWrapper) > 0;
     }
 
