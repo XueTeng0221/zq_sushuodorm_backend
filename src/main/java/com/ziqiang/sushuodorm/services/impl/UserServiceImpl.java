@@ -94,7 +94,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
                 .setSql("occupants = concat(occupants, '" + userItem.getUserName() + "')");
         RoomItem newRoomItem = roomMapper.selectOne(roomUpdateWrapper);
         if (ObjectUtils.isEmpty(newRoomItem)) {
-            RoomItem roomItem = new RoomItem().setRoomId(Integer.parseInt(roomId));
+            RoomItem roomItem = new RoomItem().setRoomId(Integer.parseInt(roomId.substring(roomId.indexOf("-") + 1)));
             roomItem.getOccupants().put(userItem.getUserName(), userItem);
             return roomMapper.insert(roomItem) > 0;
         }

@@ -1,7 +1,7 @@
 package com.ziqiang.sushuodorm.services.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -15,12 +15,7 @@ import com.ziqiang.sushuodorm.mapper.PostMapper;
 import com.ziqiang.sushuodorm.services.LikePostService;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.sql.Date;
-import java.sql.Time;
-import java.time.LocalTime;
 
 @Service
 @EqualsAndHashCode(callSuper = true)
@@ -37,10 +32,10 @@ public class LikePostServiceImpl extends ServiceImpl<LikePostMapper, LikePostIte
     @Override
     public boolean save(String userId, Long postId) {
         try {
-            QueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper)
-                    .eq("id", userId)
-                    .eq("post_id", postId)
-                    .eq("is_deleted", false);
+            LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda()
+                    .eq(PostItem::getAuthor, userId)
+                    .eq(PostItem::getId, postId)
+                    .eq(PostItem::getIsDeleted, false);
             PostItem postItem = postMapper.selectOne(queryWrapper);
             postItem.setLikes(postItem.getLikes() + 1);
             return likePostMapper.insert(new LikePostItem().setPostId(postId)) > 0;
@@ -52,10 +47,10 @@ public class LikePostServiceImpl extends ServiceImpl<LikePostMapper, LikePostIte
 
     @Override
     public boolean remove(String userId, Long postId) {
-        QueryChainWrapper<LikePostItem> queryWrapper = new QueryChainWrapper<>(likePostMapper)
-                .eq("id", userId)
-                .eq("post_id", postId)
-                .eq("is_deleted", false);
+        LambdaQueryChainWrapper<LikePostItem> queryWrapper = new QueryChainWrapper<>(likePostMapper).lambda()
+                .eq(LikePostItem::getUserId, userId)
+                .eq(LikePostItem::getPostId, postId)
+                .eq(LikePostItem::getIsDeleted, false);
         QueryChainWrapper<PostItem> postWrapper = new QueryChainWrapper<>(postMapper)
                 .eq("id", userId)
                 .eq("post_id", postId)
@@ -67,9 +62,10 @@ public class LikePostServiceImpl extends ServiceImpl<LikePostMapper, LikePostIte
 
     @Override
     public IPage<LikePostItem> getPage(String userId, int pageNum, int pageId) {
-        QueryChainWrapper<LikePostItem> queryWrapper = new QueryChainWrapper<>(likePostMapper)
-                .eq("user_id", userId)
-                .eq("is_deleted", false);
+        LambdaQueryChainWrapper<LikePostItem> queryWrapper = new QueryChainWrapper<>(likePostMapper).lambda()
+                .eq(LikePostItem::getUserId, userId)
+                .eq(LikePostItem::getIsDeleted, false)
+                .orderByDesc(LikePostItem::getDate);
         return likePostMapper.selectPage(new Page<>(pageNum, pageId), queryWrapper).convert(
                 likePostItem -> new LikePostItem()
                         .setUserId(likePostItem.getUserId())

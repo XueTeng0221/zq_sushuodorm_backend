@@ -1,7 +1,10 @@
 package com.ziqiang.sushuodorm.services.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
+import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.common.ErrorCode;
@@ -17,6 +20,7 @@ import com.ziqiang.sushuodorm.mapper.PostMapper;
 import com.ziqiang.sushuodorm.services.PostService;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -39,16 +43,18 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implement
 
     @Override
     public boolean insertPost(String title) {
-        PostItem postItem = new PostItem();
-        postItem.setTitle(title);
+        PostItem postItem = new PostItem()
+                .setTitle(title)
+                .setIsDeleted(0);
         return postMapper.insert(postItem) > 0;
     }
 
     @Override
     public boolean insertPost(String title, List<String> tags) {
-        PostItem postItem = new PostItem();
-        postItem.setTitle(title);
-        postItem.setTags(String.join(",", tags));
+        PostItem postItem = new PostItem()
+                .setTitle(title)
+                .setIsDeleted(0)
+                .setTags(String.join(",", tags));
         return postMapper.insert(postItem) > 0;
     }
 
@@ -64,8 +70,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implement
 
     @Override
     public Set<CommentItem> getCommentByPostId(Long postId) {
-        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("post_id", postId);
+        LambdaQueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).lambda()
+                .eq(CommentItem::getPostId, postId);
         return new HashSet<>(commentMapper.selectList(queryWrapper));
     }
 
@@ -74,23 +80,16 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implement
         QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("post_id", postId);
         List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
-        if (commentItems.isEmpty()) {
-            return new Page<>();
-        }
         Map<Long, CommentItem> commentItemMap = commentItems.stream()
-                .collect(Collectors.toMap(CommentItem::getId,
-                        Function.identity(),
-                        (existing, replacement) -> existing));
+                .collect(Collectors.toMap(CommentItem::getId, commentItem -> commentItem));
         Map<Long, CommentItem> userNameMap = commentItemMap.values().stream()
-                .collect(Collectors.toMap(CommentItem::getReplyNum,
-                        Function.identity(),
-                        (existing, replacement) -> existing));
+                .collect(Collectors.toMap(CommentItem::getReplyNum, commentItem -> commentItem));
         commentItems.forEach(commentItem -> {
             CommentItem relatedComment = userNameMap.get(commentItem.getReplyNum());
             if (!commentItem.getReplies().isEmpty()) {
                 commentItem.getReplies().forEach(reply -> {
                     CommentItem relatedReply = userNameMap.get(reply.getReplyNum());
-                    if (relatedReply != null) {
+                    if (ObjectUtils.isNotEmpty(relatedReply)) {
                         reply.setAuthor(relatedReply.getAuthor());
                     }
                 });
@@ -99,7 +98,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implement
         });
         return commentMapper.selectPage(
                 new CommentQueryRequest().getPage(),
-                new QueryWrapper<CommentItem>().eq("post_id", postId)
+                new QueryWrapper<CommentItem>().lambda().eq(CommentItem::getPostId, postId)
         ).convert(commentItem -> new CommentVo()
                 .setId(commentItem.getId())
                 .setContent(commentItem.getContent())
@@ -112,13 +111,9 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implement
 
     @Override
     public Page<PostItem> getPosts(PostQueryRequest postQueryRequest) throws NoSuchPostException {
-        QueryWrapper<PostItem> queryWrapper = new QueryWrapper<>();
-        if (postQueryRequest.getTitle() != null) {
-            queryWrapper.like("title", postQueryRequest.getTitle());
-        }
-        if (postQueryRequest.getTags() != null) {
-            queryWrapper.like("tags", postQueryRequest.getTags());
-        }
+        LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda()
+                .like(PostItem::getTitle, postQueryRequest.getTitle())
+                .like(PostItem::getTags, String.join(", ", postQueryRequest.getTags()));
         Page<PostItem> page = new Page<>(postQueryRequest.getCurrentId(), postQueryRequest.getPageSize());
         return postMapper.selectPage(page, queryWrapper);
     }

@@ -1,7 +1,9 @@
 package com.ziqiang.sushuodorm.services.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -40,48 +42,40 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, RoomItem> implement
                 .setRoomName(roomName)
                 .setRoomId(Integer.parseInt(roomName.substring(roomName.indexOf("-") + 1)))
                 .setDormName(roomName.substring(0, roomName.indexOf("-")));
-        roomMapper.insert(roomItem);
-        for (Map.Entry<String, UserItem> entry : occupants.entrySet()) {
-            entry.getValue().setRoomId(roomName.substring(roomName.indexOf("-") + 1));
-        }
-        return saveOrUpdate(roomItem);
+        occupants.forEach((key, value) -> userMapper.updateById(
+                value.setRoomId(roomName.substring(roomName.indexOf("-") + 1))));
+        return roomMapper.insert(roomItem) > 0;
     }
 
     public boolean updateRoom(UserUpdateRequest userUpdateRequest, Map<String, UserItem> occupants) {
+        LambdaQueryChainWrapper<RoomItem> roomWrapper = new QueryChainWrapper<>(roomMapper).lambda()
+                .eq(RoomItem::getRoomId, userUpdateRequest.getRoomId());
         RoomItem roomItem = new RoomItem()
                 .setOccupants(occupants)
                 .setRoomName(userUpdateRequest.getRoomId())
                 .setRoomId(Integer.parseInt(
                         userUpdateRequest.getRoomId().substring(userUpdateRequest.getRoomId().indexOf("-") + 1)))
                 .setDormName(userUpdateRequest.getRoomId().substring(0, userUpdateRequest.getRoomId().indexOf("-")));
-        roomMapper.updateById(roomItem);
-        for (Map.Entry<String, UserItem> entry : occupants.entrySet()) {
-            UserItem userItem = entry.getValue();
-            userItem.setRoomId(userUpdateRequest.getRoomId().substring(userUpdateRequest.getRoomId().indexOf("-") + 1));
-        }
-        return saveOrUpdate(roomItem);
+        occupants.forEach((key, value) -> userMapper.updateById(
+                value.setRoomId(userUpdateRequest.getRoomId().substring(userUpdateRequest.getRoomId().indexOf("-") + 1))));
+        return roomMapper.update(roomItem, roomWrapper) > 0;
     }
 
     public boolean removeRoom(String roomId) {
-        QueryWrapper<RoomItem> roomWrapper = new QueryWrapper<RoomItem>().eq("room_id", roomId);
-        QueryWrapper<UserItem> userWrapper = new QueryWrapper<UserItem>().eq("room_id", roomId);
+        LambdaQueryChainWrapper<RoomItem> roomWrapper = new QueryChainWrapper<>(roomMapper).lambda()
+                .eq(RoomItem::getRoomId, roomId);
+        LambdaQueryChainWrapper<UserItem> userWrapper = new QueryChainWrapper<>(userMapper).lambda()
+                .eq(UserItem::getRoomId, roomId);
         List<UserItem> userItems = userMapper.selectList(userWrapper);
-        for (UserItem userItem : userItems) {
-            userItem.setRoomId(null);
-            userMapper.updateById(userItem);
-        }
-        return roomMapper.delete(roomWrapper) > 0 && userMapper.update(null, userWrapper) > 0;
+        userItems.forEach(userItem -> userMapper.updateById(userItem.setRoomId(null)));
+        return roomMapper.delete(roomWrapper) > 0 && userMapper.delete(userWrapper) > 0;
     }
 
     @Override
     public IPage<RoomVo> getAllRooms(RoomQueryRequest roomQueryRequest) {
-        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper)
-                .like("roomName", roomQueryRequest.getRoomName());
-        if (!CollectionUtils.isEmpty(roomQueryRequest.getOccupants())) {
-            for (Map.Entry<String, UserItem> entry : roomQueryRequest.getOccupants().entrySet()) {
-                queryWrapper.like("occupants", entry.getValue().getUserName());
-            }
-        }
+        LambdaQueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper).lambda()
+                .like(RoomItem::getRoomName, roomQueryRequest.getRoomName());
+        roomQueryRequest.getOccupants().forEach((key, value) -> queryWrapper.like(RoomItem::getOccupants, value.getUserName()));
         return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
                 .convert(roomItem -> new RoomVo()
                         .setOccupantMap(roomItem.getOccupants())

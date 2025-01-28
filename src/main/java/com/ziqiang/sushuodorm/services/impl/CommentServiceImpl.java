@@ -14,6 +14,7 @@ import com.ziqiang.sushuodorm.entity.vo.CommentVo;
 import com.ziqiang.sushuodorm.exception.NoSuchPostException;
 import com.ziqiang.sushuodorm.mapper.*;
 import com.ziqiang.sushuodorm.services.CommentService;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@Getter
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> implements CommentService {
     @Autowired
     private CommentMapper commentMapper;

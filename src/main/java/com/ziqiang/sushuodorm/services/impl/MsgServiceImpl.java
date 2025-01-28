@@ -1,6 +1,6 @@
 package com.ziqiang.sushuodorm.services.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.entity.item.MsgItem;
@@ -37,7 +37,7 @@ public class MsgServiceImpl extends ServiceImpl<MsgMapper, MsgItem> implements M
 
     @Override
     public List<MsgItem> getMsgList(String userId) {
-        QueryWrapper<MsgItem> queryWrapper = new QueryWrapper<MsgItem>()
+        QueryChainWrapper<MsgItem> queryWrapper = new QueryChainWrapper<>(msgMapper)
                 .eq("is_deleted", false)
                 .eq("user_id", userId);
         return msgMapper.selectList(queryWrapper);
@@ -45,7 +45,7 @@ public class MsgServiceImpl extends ServiceImpl<MsgMapper, MsgItem> implements M
 
     @Override
     public Page<MsgItem> getPage(String userId, int currentPage, int pageSize) {
-        QueryWrapper<MsgItem> queryWrapper = new QueryWrapper<MsgItem>()
+        QueryChainWrapper<MsgItem> queryWrapper = new QueryChainWrapper<>(msgMapper)
                 .eq("is_deleted", false)
                 .eq("user_id", userId);
         List<MsgItem> msgList = msgMapper.selectList(queryWrapper);

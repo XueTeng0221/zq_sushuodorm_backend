@@ -2,6 +2,7 @@ package com.ziqiang.sushuodorm.services.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,28 +57,32 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
 
     @Override
     public boolean reply(String userId, List<UserItem> receivers) {
-        QueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper)
-                .in("id", receivers.stream().map(UserItem::getUserName).collect(Collectors.toList()));
+        LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
+                .in(MailItem::getReceivers, receivers.stream().collect(
+                        Collectors.toMap(UserItem::getUserName, userItem -> userItem.setUserAvatar(userItem.getUserAvatar()))));
         return CollectionUtils.isEmpty(receivers) && queryWrapper.list().stream()
                 .map(mailItem -> mailItem
-                .setIsReplied(true).setTitle("Re: ")
+                        .setIsReplied(true)
+                        .setTitle("Re: " + mailItem.getTitle())
         ).allMatch(mailItem -> mailMapper.updateById(mailItem) > 0);
     }
 
     @Override
     public boolean update(String postId, String title, String subject) {
-        QueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper)
-                .eq("postId", Long.parseLong(postId));
+        LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
+                .eq(MailItem::getId, Long.parseLong(postId));
         MailItem mailItem = new MailItem().setUserId(Long.parseLong(postId))
                 .setTitle(title)
-                .setSubject(subject);
-        mailItem.setIsDeleted(false);
+                .setSubject(subject)
+                .setIsDeleted(false);
         return update(mailItem, queryWrapper);
     }
 
     @Override
     public IPage<MailItem> getItemByUsername(String username, MailQueryRequest queryRequest) {
-        QueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).eq("senderName", username);
+        LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
+                .eq(MailItem::getSenderName, username)
+                .eq(MailItem::getIsDeleted, false);
         return mailMapper.selectPage(queryRequest.getPage(), queryWrapper).setRecords(
                 new ArrayList<>(queryWrapper.list()));
     }
@@ -97,12 +103,11 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
 
     @Override
     public IPage<UserVo> getReceiverByUsername(String username, int currentSize, int pageSize) {
-        QueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper)
-                .eq("senderName", username);
+        LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
+                .eq(MailItem::getSenderName, username);
         MailItem sent = mailMapper.selectOne(queryWrapper);
-        Map<String, Set<UserItem>> receiverMap = userMapper.selectList(new QueryWrapper<UserItem>()
-                .in("username", sent.getReceivers().keySet()))
-                .stream()
+        Map<String, Set<UserItem>> receiverMap = userMapper.selectList(new QueryWrapper<UserItem>().lambda()
+                .in(UserItem::getUserName, username)).stream()
                 .collect(Collectors.groupingBy(
                         UserItem::getUserName,
                         Collectors.mapping(replaced -> replaced, Collectors.toSet()))
@@ -112,7 +117,8 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
                 .setRecords(receiverMap.keySet().stream().map(
                     userItems -> new UserVo()
                     .setUserName(userItems)
-                    .setUserAvatar(receiverMap.get(userItems).stream().findFirst().orElseThrow().getUserAvatar()))
+                    .setUserAvatar(receiverMap.get(userItems).stream()
+                            .findFirst().orElseThrow().getUserAvatar()))
                 .toList());
     }
 }
