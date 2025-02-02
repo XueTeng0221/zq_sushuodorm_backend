@@ -106,3 +106,19 @@ CREATE TABLE comment (
                          create_time DATETIME NOT NULL COMMENT '创建时间',
                          update_time DATETIME NOT NULL COMMENT '更新时间'
 ) COMMENT='评论表';
+CREATE TABLE order (
+                        id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '订单ID',
+                        user_id BIGINT NOT NULL COMMENT '用户ID',
+                        from_dorm_id TEXT NOT NULL COMMENt '起始宿舍号',
+                        to_dorm_id TEXT NOT NULL COMMENT '目标宿舍号',
+                        start_time DATETIME NOT NULL COMMENT '起始时间',
+                        end_time DATETIME NOT NULL COMMENT '结束时间',
+) COMMENT='出物';
+CREATE TABLE fetch (
+                       id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '取物ID',
+                       user_id BIGINT NOT NULL COMMENT '用户ID',
+                       from_dorm_id TEXT NOT NULL COMMENt '起始宿舍号',
+                       to_dorm_id TEXT NOT NULL COMMENT '目标宿舍号',
+                       start_time DATETIME NOT NULL COMMENT '起始时间',
+                       end_time DATETIME NOT NULL COMMENT '结束时间',
+) COMMENT='取物';
