@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ziqiang.sushuodorm.mapper.OrderMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.ziqiang.sushuodorm.entity.item.OrderItem">
+        <id column="order_id" property="orderId" />
+        <result column="user_id" property="userId" />
+        <result column="title" property="title" />
+        <result column="description" property="description" />
+        <result column="from_dorm_id" property="fromDormId" />
+        <result column="to_dorm_id" property="toDormId" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+</mapper>
