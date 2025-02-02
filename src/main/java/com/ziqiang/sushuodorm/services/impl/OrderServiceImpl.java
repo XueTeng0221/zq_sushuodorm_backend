@@ -5,12 +5,14 @@ import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapp
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ziqiang.sushuodorm.entity.dto.item.FetchQueryRequest;
 import com.ziqiang.sushuodorm.entity.dto.item.OrderQueryRequest;
 import com.ziqiang.sushuodorm.entity.dto.item.OrderUpdateRequest;
 import com.ziqiang.sushuodorm.entity.enums.OrderStatusEnum;
 import com.ziqiang.sushuodorm.entity.item.RoomItem;
 import com.ziqiang.sushuodorm.entity.item.order.FetchItem;
 import com.ziqiang.sushuodorm.entity.item.order.OrderItem;
+import com.ziqiang.sushuodorm.entity.vo.FetchVo;
 import com.ziqiang.sushuodorm.entity.vo.OrderVo;
 import com.ziqiang.sushuodorm.mapper.FetchMapper;
 import com.ziqiang.sushuodorm.mapper.OrderMapper;
@@ -28,20 +30,21 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implements OrderService {
     @Autowired
-    public OrderMapper orderMapper;
+    private OrderMapper orderMapper;
     @Autowired
-    public RoomMapper roomMapper;
+    private RoomMapper roomMapper;
     @Autowired
-    public UserMapper userMapper;
+    private UserMapper userMapper;
     @Autowired
-    public FetchMapper fetchMapper;
+    private FetchMapper fetchMapper;
 
     @Override
     public boolean save(String orderId, String userId, String roomId, String toDormId, String title, String description) {
         return orderMapper.insert(new OrderItem()
                 .setOrderId(orderId)
                 .setUserId(userId)
-                .setFromDormId(roomId)
+                .setTitle(title)
+                .setFromDormId(roomId.substring(0, roomId.indexOf("-")))
                 .setToDormId(toDormId)
                 .setDescription(description)) > 0;
     }
@@ -59,18 +62,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implem
         LambdaQueryChainWrapper<OrderItem> queryWrapper = new QueryChainWrapper<>(orderMapper).lambda()
                 .eq(OrderItem::getOrderId, orderId)
                 .eq(OrderItem::getUserId, userId);
-        if (orderUpdateRequest.getStatus() == OrderStatusEnum.UNFINISHED) {
-            fetchMapper.insert(new FetchItem()
-                    .setFetchId(orderId)
-                    .setUserId(userId)
-                    .setToDormId(orderUpdateRequest.getFromDormId()));
-        }
-        if (orderUpdateRequest.getStatus() == OrderStatusEnum.FINISHED) {
-            fetchMapper.insert(new FetchItem()
-                    .setFetchId(orderId)
-                    .setUserId(userId)
-                    .setToDormId(orderUpdateRequest.getToDormId()));
-        }
+        fetchMapper.insert(new FetchItem()
+                .setFetchId(orderId)
+                .setUserId(userId)
+                .setToDormId(orderUpdateRequest.getStatus() == OrderStatusEnum.FINISHED ?
+                        orderUpdateRequest.getToDormId() : null));
         return orderMapper.update(new OrderItem()
                 .setTitle(title)
                 .setDescription(description)
@@ -78,7 +74,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implem
     }
 
     public IPage<OrderVo> getOrdersByRoomId(String userId, OrderQueryRequest orderQueryRequest) {
-        LambdaQueryChainWrapper<OrderItem> queryWrapper = new QueryChainWrapper<>(orderMapper).lambda()
+        LambdaQueryChainWrapper<OrderItem> orderWrapper = new QueryChainWrapper<>(orderMapper).lambda()
                 .eq(OrderItem::getUserId, userId)
                 .orderByDesc(OrderItem::getStartDate);
         Map<String, RoomItem> occupantRoomMap = roomMapper.selectList(new QueryChainWrapper<>(roomMapper).lambda()
@@ -89,7 +85,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implem
         List<RoomItem> roomItems = roomMapper.selectList(roomWrapper);
         occupantRoomMap.forEach((key, value) -> occupantRoomMap.put(key, roomItems.stream().filter(roomItem -> roomItem.getRoomId()
                 .equals(value.getRoomId())).findFirst().orElse(null)));
-        return orderMapper.selectPage(new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize()), queryWrapper)
+        return orderMapper.selectPage(new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize()), orderWrapper)
                 .convert(orderItem -> new OrderVo()
                         .setUserId(orderItem.getUserId())
                         .setFromDormId(occupantRoomMap.get(orderItem.getFromDormId()).getDormName())
@@ -160,6 +156,27 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implem
                         .setStartDate(orderItem.getStartDate())
                 );
     }
+
+    public IPage<FetchVo> getFetchesByOrderId(String orderId, FetchQueryRequest fetchQueryRequest) {
+        LambdaQueryChainWrapper<OrderItem> orderWrapper = new QueryChainWrapper<>(orderMapper).lambda()
+                .eq(OrderItem::getOrderId, orderId)
+                .orderByDesc(OrderItem::getStartDate);
+        OrderItem orderItem = orderMapper.selectOne(orderWrapper);
+        LambdaQueryChainWrapper<FetchItem> fetchWrapper = new QueryChainWrapper<>(fetchMapper).lambda()
+                .eq(FetchItem::getFetchId, orderId);
+        Map<String, FetchItem> fetchMap = fetchMapper.selectList(fetchWrapper).stream().collect(
+                Collectors.toMap(FetchItem::getFetchId, fetchItem -> fetchItem, (a, b) -> a, HashMap::new));
+        fetchMap.forEach((key, value) -> {
+            fetchWrapper.ge(FetchItem::getStartDate, value.getStartDate())
+                    .le(FetchItem::getEndDate, value.getEndDate());
+        });
+        return fetchMapper.selectPage(new Page<>(fetchQueryRequest.getCurrentId(), fetchQueryRequest.getPageSize()), fetchWrapper)
+                .convert(fetchItem -> new FetchVo()
+                        .setFetchId(fetchItem.getFetchId())
+                        .setUserId(fetchItem.getUserId())
+                        .setStartDate(fetchMap.get(orderItem.getOrderId()).getStartDate())
+                        .setEndDate(fetchMap.get(orderItem.getOrderId()).getEndDate()));
+     }
 
     public List<OrderVo> getOrdersByUserId(String userId) {
         LambdaQueryChainWrapper<OrderItem> queryWrapper = new QueryChainWrapper<>(orderMapper).lambda()

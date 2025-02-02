@@ -2,10 +2,11 @@ package com.ziqiang.sushuodorm.services;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.ziqiang.sushuodorm.entity.dto.item.FetchQueryRequest;
 import com.ziqiang.sushuodorm.entity.dto.item.OrderQueryRequest;
 import com.ziqiang.sushuodorm.entity.dto.item.OrderUpdateRequest;
-import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.entity.item.order.OrderItem;
+import com.ziqiang.sushuodorm.entity.vo.FetchVo;
 import com.ziqiang.sushuodorm.entity.vo.OrderVo;
 
 import java.util.List;
@@ -28,4 +29,6 @@ public interface OrderService extends IService<OrderItem> {
     IPage<OrderVo> getOrdersByKeywords(List<String> keywords, OrderQueryRequest orderQueryRequest);
 
     IPage<OrderVo> getOrdersByOccupants(List<String> occupants, OrderQueryRequest orderQueryRequest);
+
+    IPage<FetchVo> getFetchesByOrderId(String orderId, FetchQueryRequest fetchQueryRequest);
 }

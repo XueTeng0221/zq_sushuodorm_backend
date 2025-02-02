@@ -5,13 +5,10 @@ import lombok.Data;
 import java.sql.Date;
 
 @Data
-public class OrderAddRequest {
-    String orderId;
+public class FetchAddRequest {
+    String fetchId;
     String userId;
     String postId;
-    String roomId;
-    String title;
-    String description;
     String fromDormId;
     String toDormId;
     Date startDate;
