@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ziqiang.sushuodorm.entity.enums.UserRoleEnum;
 import com.ziqiang.sushuodorm.entity.item.RoomItem;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.mapper.RoomMapper;
@@ -15,28 +16,22 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implements UserService {
-    @Value("${wxapp.appId}")
-    private String appId;
-    @Value("${wxapp.appSecret}")
-    private String appSecret;
-    private UserMapper userMapper;
-    private RoomMapper roomMapper;
-
     @Autowired
-    public UserServiceImpl(UserMapper userMapper, RoomMapper roomMapper) {
-        this.userMapper = userMapper;
-        this.roomMapper = roomMapper;
-    }
+    private UserMapper userMapper;
+    @Autowired
+    private RoomMapper roomMapper;
 
     @Override
     public UserItem getLoginUser(HttpServletRequest request) {
+        if (ObjectUtils.isEmpty(request)) {
+            return null;
+        }
         LambdaQueryChainWrapper<UserItem> queryWrapper = new QueryChainWrapper<>(userMapper).lambda()
                 .eq(UserItem::getUnionId, request.getParameter("code"));
         UserItem loginUser = userMapper.selectOne(queryWrapper);
@@ -85,7 +80,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
     @Override
     public boolean updateRoomId(String userId, String roomId) {
         LambdaQueryChainWrapper<UserItem> userWrapper = new QueryChainWrapper<>(userMapper).lambda()
-                .eq(UserItem::getUserName, userId);
+                .eq(UserItem::getUserName, userId)
+                .eq(UserItem::getUserRole, UserRoleEnum.ADMIN.getValue());
         UserItem userItem = userMapper.selectOne(userWrapper);
         if (userItem.getRoomId().equals(roomId)) {
             return false;
@@ -103,7 +99,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
         }
         LambdaUpdateChainWrapper<UserItem> userUpdateWrapper = new UpdateChainWrapper<>(userMapper).lambda()
                 .eq(UserItem::getUserName, userId);
-        return userMapper.update(userItem, userUpdateWrapper) > 0 && roomMapper.update(null, roomUpdateWrapper) > 0;
+        return userMapper.update(userItem, userUpdateWrapper) > 0 && roomMapper.update(newRoomItem, roomUpdateWrapper) > 0;
     }
 
     @Override

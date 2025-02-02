@@ -17,10 +17,12 @@ public class LikePostItem implements Serializable {
     private Date date;
     @TableField
     private String username;
+    @TableField
+    private String userId;
     @TableId(type = IdType.AUTO)
     private Long id;
     @TableField
     private Long postId;
-    @TableField
-    private Long userId;
+    @TableLogic
+    private Boolean isDeleted;
 }

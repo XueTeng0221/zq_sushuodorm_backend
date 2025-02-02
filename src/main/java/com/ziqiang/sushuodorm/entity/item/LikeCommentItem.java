@@ -18,6 +18,7 @@ public class LikeCommentItem implements Serializable {
     @TableField(value = "username")
     private String username;
     @TableId(type = IdType.AUTO)
+    @TableField(value = "id")
     private Long id;
     @TableField(value = "comment_id")
     private Long commentId;

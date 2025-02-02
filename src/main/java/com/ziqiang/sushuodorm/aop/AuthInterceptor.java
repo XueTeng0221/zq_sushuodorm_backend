@@ -35,9 +35,6 @@ public class AuthInterceptor {
         if (ObjectUtils.isNull(userRoleEnum)) {
             throw new RuntimeException();
         }
-        if (UserRoleEnum.ADMIN.equals(userRoleEnum)) {
-            return joinPoint.proceed();
-        }
         return joinPoint.proceed();
     }
 }

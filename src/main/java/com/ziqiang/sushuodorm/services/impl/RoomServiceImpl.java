@@ -18,6 +18,7 @@ import com.ziqiang.sushuodorm.mapper.UserMapper;
 import com.ziqiang.sushuodorm.services.RoomService;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -28,13 +29,10 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class RoomServiceImpl extends ServiceImpl<RoomMapper, RoomItem> implements RoomService {
+    @Autowired
     private RoomMapper roomMapper;
+    @Autowired
     private UserMapper userMapper;
-
-    public RoomServiceImpl(RoomMapper roomMapper, UserMapper userMapper) {
-        this.roomMapper = roomMapper;
-        this.userMapper = userMapper;
-    }
 
     public boolean saveRoom(Map<String, UserItem> occupants, String roomName) {
         RoomItem roomItem = new RoomItem()

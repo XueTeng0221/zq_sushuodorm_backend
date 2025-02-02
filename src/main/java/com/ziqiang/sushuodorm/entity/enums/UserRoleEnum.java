@@ -17,7 +17,7 @@ public enum UserRoleEnum {
     private final String value;
 
     public static List<String> getValues() {
-        return Arrays.stream(values()).map(item -> item.value).collect(Collectors.toList());
+        return Arrays.stream(values()).map(UserRoleEnum::getValue).collect(Collectors.toList());
     }
 
     public static UserRoleEnum getEnumByValue(String value) {

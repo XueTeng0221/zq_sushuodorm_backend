@@ -32,14 +32,10 @@ import java.util.stream.Collectors;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implements PostService {
-    private PostMapper postMapper;
-    private CommentMapper commentMapper;
-
     @Autowired
-    public PostServiceImpl(PostMapper postMapper, CommentMapper commentMapper) {
-        this.postMapper = postMapper;
-        this.commentMapper = commentMapper;
-    }
+    private PostMapper postMapper;
+    @Autowired
+    private CommentMapper commentMapper;
 
     @Override
     public boolean insertPost(String title) {

@@ -9,8 +9,8 @@ import lombok.EqualsAndHashCode;
 import java.io.Serializable;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class PostQueryRequest extends PageRequest implements Serializable {
     private static final long serialVersionUID = -132458973245893245L;
     private Page<PostItem> page;

@@ -35,4 +35,8 @@ public class BaseResponse<T> implements Serializable {
     public static <T> BaseResponse<T> error(int code, T data, String message) {
         return new BaseResponse<>(code, data, message);
     }
+
+    public static <T> BaseResponse<T> ok(T data, String message) {
+        return new BaseResponse<>(ErrorCode.SUCCESS.getCode(), data, message);
+    }
 }

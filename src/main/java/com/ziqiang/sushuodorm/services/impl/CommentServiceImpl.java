@@ -40,8 +40,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     @Autowired
     private CommentEsDao commentEsDao;
 
-    private Map<Long, Set<CommentItem>> commentTree = new HashMap<>();
-    private Deque<CommentItem> commentStack = new ArrayDeque<>();
+    private final Map<Long, Set<CommentItem>> commentTree = new HashMap<>();
+    private final Deque<CommentItem> commentStack = new ArrayDeque<>();
 
     @Override
     public boolean addComment(Long postId, String username, String content) {
@@ -57,24 +57,20 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     }
 
     @Override
-    public boolean addReply(Long commentId, String username, String content) {
+    public boolean addReply(Long commentId, String username, String content) throws NoSuchPostException {
         QueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).eq("id", commentId);
         CommentItem commentItem = queryWrapper.getEntity();
-        try {
-            CommentItem replyItem = new CommentItem()
-                    .setId(commentId + 1)
-                    .setAuthor(username)
-                    .setParentId(commentId)
-                    .setContent(content)
-                    .setReplies(new HashSet<>());
-            commentItem.setReplyNum(commentItem.getReplyNum() + 1);
-            commentMapper.insert(replyItem);
-            commentTree.get(commentItem.getId()).add(replyItem);
-            commentTree.put(replyItem.getId(), new HashSet<>());
-            return commentMapper.insertOrUpdate(replyItem);
-        } catch (Exception e) {
-            return false;
-        }
+        CommentItem replyItem = new CommentItem()
+                .setId(commentId + 1)
+                .setAuthor(username)
+                .setParentId(commentId)
+                .setContent(content)
+                .setReplies(new HashSet<>());
+        commentItem.setReplyNum(commentItem.getReplyNum() + 1);
+        commentMapper.insert(replyItem);
+        commentTree.get(commentItem.getId()).add(replyItem);
+        commentTree.put(replyItem.getId(), new HashSet<>());
+        return commentMapper.insertOrUpdate(replyItem);
     }
 
     @Override
