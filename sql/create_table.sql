@@ -3,7 +3,7 @@ CREATE DATABASE sushuodorm;
 -- 切换库
 use sushuodorm;
 
-CREATE TABLE user (
+CREATE TABLE 'user' (
                       id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '用户ID',
                       create_time DATETIME NOT NULL COMMENT '创建时间',
                       update_time DATETIME NOT NULL COMMENT '更新时间',
@@ -20,7 +20,7 @@ CREATE TABLE user (
                       is_deleted BOOLEAN NOT NULL DEFAULT FALSE COMMENT '逻辑删除标志'
 ) COMMENT='用户表';
 
-CREATE TABLE room (
+CREATE TABLE 'room' (
                       room_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '寝室号',
                       dorm_name VARCHAR(255) COMMENT '宿舍名称',
                       room_name VARCHAR(255) COMMENT '房间名称',
@@ -29,7 +29,7 @@ CREATE TABLE room (
                       update_time DATETIME NOT NULL COMMENT '更新时间',
                       is_deleted INT DEFAULT 0 COMMENT '逻辑删除标志'
 ) COMMENT='房间表';
-CREATE TABLE post (
+CREATE TABLE 'post' (
                       id INT AUTO_INCREMENT PRIMARY KEY COMMENT '帖子ID',
                       date DATETIME COMMENT '帖子日期',
                       title VARCHAR(255) NOT NULL COMMENT '帖子标题',
@@ -42,7 +42,7 @@ CREATE TABLE post (
                       update_time DATETIME NOT NULL COMMENT '更新时间',
                       is_deleted INT DEFAULT 0 COMMENT '逻辑删除标志'
 ) COMMENT='帖子表';
-CREATE TABLE msg (
+CREATE TABLE 'msg' (
                      id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '消息ID',
                      date DATETIME COMMENT '消息日期',
                      content TEXT COMMENT '消息内容',
@@ -51,7 +51,7 @@ CREATE TABLE msg (
                      update_time DATETIME NOT NULL COMMENT '更新时间'
 ) COMMENT='消息表';
 
-CREATE TABLE mail (
+CREATE TABLE 'mail' (
                       id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '邮件ID',
                       user_id BIGINT COMMENT '用户ID',
                       sender_name VARCHAR(255) COMMENT '发件人姓名',
@@ -66,7 +66,7 @@ CREATE TABLE mail (
                       is_replied BOOLEAN DEFAULT FALSE COMMENT '是否已回复'
 ) COMMENT='邮件表';
 
-CREATE TABLE likePost (
+CREATE TABLE 'likePost' (
                           id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '点赞ID',
                           username VARCHAR(255) COMMENT '用户名',
                           post_id BIGINT NOT NULL COMMENT '帖子ID',
@@ -75,7 +75,7 @@ CREATE TABLE likePost (
                           update_time DATETIME NOT NULL COMMENT '更新时间'
 ) COMMENT='点赞表';
 
-CREATE TABLE likeComment (
+CREATE TABLE 'likeComment' (
                              id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '点赞ID',
                              username VARCHAR(255) COMMENT '用户名',
                              comment_id BIGINT NOT NULL COMMENT '评论ID',
@@ -85,7 +85,7 @@ CREATE TABLE likeComment (
                              update_time DATE NOT NULL COMMENT '更新时间'
 ) COMMENT='评论点赞表';
 
-CREATE TABLE favorite (
+CREATE TABLE 'favorite' (
                           id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '收藏ID',
                           post_id BIGINT NOT NULL COMMENT '帖子ID',
                           user_id BIGINT NOT NULL COMMENT '用户ID',
@@ -94,7 +94,7 @@ CREATE TABLE favorite (
                           update_time DATETIME NOT NULL COMMENT '更新时间',
                           is_deleted BOOLEAN DEFAULT FALSE COMMENT '是否已删除'
 ) COMMENT='收藏表';
-CREATE TABLE comment (
+CREATE TABLE 'comment' (
                          id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '评论ID',
                          content TEXT NOT NULL COMMENT '评论内容',
                          author VARCHAR(255) NOT NULL COMMENT '评论作者',
@@ -106,19 +106,19 @@ CREATE TABLE comment (
                          create_time DATETIME NOT NULL COMMENT '创建时间',
                          update_time DATETIME NOT NULL COMMENT '更新时间'
 ) COMMENT='评论表';
-CREATE TABLE order (
+CREATE TABLE 'order' (
                         id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '订单ID',
                         user_id BIGINT NOT NULL COMMENT '用户ID',
                         from_dorm_id TEXT NOT NULL COMMENt '起始宿舍号',
                         to_dorm_id TEXT NOT NULL COMMENT '目标宿舍号',
                         start_time DATETIME NOT NULL COMMENT '起始时间',
-                        end_time DATETIME NOT NULL COMMENT '结束时间',
-) COMMENT='出物';
-CREATE TABLE fetch (
+                        end_time DATETIME NOT NULL COMMENT '结束时间'
+) COMMENT='出物表';
+CREATE TABLE 'fetch' (
                        id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '取物ID',
                        user_id BIGINT NOT NULL COMMENT '用户ID',
                        from_dorm_id TEXT NOT NULL COMMENt '起始宿舍号',
                        to_dorm_id TEXT NOT NULL COMMENT '目标宿舍号',
                        start_time DATETIME NOT NULL COMMENT '起始时间',
-                       end_time DATETIME NOT NULL COMMENT '结束时间',
-) COMMENT='取物';
+                       end_time DATETIME NOT NULL COMMENT '结束时间'
+) COMMENT='取物表';
