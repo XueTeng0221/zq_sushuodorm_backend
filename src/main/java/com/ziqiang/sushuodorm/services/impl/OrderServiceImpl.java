@@ -73,12 +73,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implem
                 .setStatus(orderUpdateRequest.getStatus()), queryWrapper) > 0;
     }
 
-    public IPage<OrderVo> getOrdersByRoomId(String userId, OrderQueryRequest orderQueryRequest) {
+    public IPage<OrderVo> getOrdersByRoomId(String roomId, OrderQueryRequest orderQueryRequest) {
         LambdaQueryChainWrapper<OrderItem> orderWrapper = new QueryChainWrapper<>(orderMapper).lambda()
-                .eq(OrderItem::getUserId, userId)
+                .like(OrderItem::getFromDormId, roomId)
                 .orderByDesc(OrderItem::getStartDate);
         Map<String, RoomItem> occupantRoomMap = roomMapper.selectList(new QueryChainWrapper<>(roomMapper).lambda()
-                .eq(RoomItem::getRoomId, userMapper.selectById(userId).getRoomId())).stream().collect(
+                .eq(RoomItem::getRoomId, userMapper.selectById(roomId).getRoomId())).stream().collect(
                 Collectors.toMap(RoomItem::getRoomName, roomItem -> roomItem, (a, b) -> a, HashMap::new));
         LambdaQueryChainWrapper<RoomItem> roomWrapper = new QueryChainWrapper<>(roomMapper).lambda()
                 .in(RoomItem::getRoomId, occupantRoomMap.keySet());
@@ -166,10 +166,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implem
                 .eq(FetchItem::getFetchId, orderId);
         Map<String, FetchItem> fetchMap = fetchMapper.selectList(fetchWrapper).stream().collect(
                 Collectors.toMap(FetchItem::getFetchId, fetchItem -> fetchItem, (a, b) -> a, HashMap::new));
-        fetchMap.forEach((key, value) -> {
-            fetchWrapper.ge(FetchItem::getStartDate, value.getStartDate())
-                    .le(FetchItem::getEndDate, value.getEndDate());
-        });
+        fetchMap.forEach((key, value) -> fetchWrapper.ge(FetchItem::getStartDate, value.getStartDate())
+                .le(FetchItem::getEndDate, value.getEndDate()));
         return fetchMapper.selectPage(new Page<>(fetchQueryRequest.getCurrentId(), fetchQueryRequest.getPageSize()), fetchWrapper)
                 .convert(fetchItem -> new FetchVo()
                         .setFetchId(fetchItem.getFetchId())

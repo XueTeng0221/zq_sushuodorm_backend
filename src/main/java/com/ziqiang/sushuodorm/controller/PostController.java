@@ -1,6 +1,8 @@
 package com.ziqiang.sushuodorm.controller;
 
+import com.ziqiang.sushuodorm.common.ErrorCode;
 import com.ziqiang.sushuodorm.entity.item.PostItem;
+import com.ziqiang.sushuodorm.entity.vo.ResponseBeanVo;
 import com.ziqiang.sushuodorm.services.PostService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,22 +19,26 @@ public class PostController {
     private PostService postService;
 
     @PostMapping("/insert")
-    public boolean insert(@RequestParam String title) {
-        return postService.insertPost(title);
+    public ResponseBeanVo<?> insert(@RequestParam String title) {
+        boolean b = postService.insertPost(title);
+        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
     @PostMapping("/insertWithTags")
-    public boolean insertWithTags(@RequestParam String title, @RequestParam List<String> tags) {
-        return postService.insertPost(title, tags);
+    public ResponseBeanVo<?> insertWithTags(@RequestParam String title, @RequestParam List<String> tags) {
+        boolean b = postService.insertPost(title, tags);
+        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
     @PostMapping("/update")
-    public boolean update(@RequestBody @NotNull PostItem postItem) {
-        return postService.updatePost(postItem);
+    public ResponseBeanVo<?> update(@RequestBody @NotNull PostItem postItem) {
+        boolean b = postService.updatePost(postItem);
+        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
     @PostMapping("/remove")
-    public boolean remove(@RequestBody @NotNull PostItem postItem) {
-        return postService.removePost(postItem);
+    public ResponseBeanVo<?> remove(@RequestBody @NotNull PostItem postItem) {
+        boolean b = postService.removePost(postItem);
+        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 }

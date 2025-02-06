@@ -1,8 +1,10 @@
 package com.ziqiang.sushuodorm.controller;
 
+import com.ziqiang.sushuodorm.common.ErrorCode;
 import com.ziqiang.sushuodorm.entity.dto.room.RoomQueryRequest;
 import com.ziqiang.sushuodorm.entity.dto.user.UserUpdateRequest;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
+import com.ziqiang.sushuodorm.entity.vo.ResponseBeanVo;
 import com.ziqiang.sushuodorm.entity.vo.RoomVo;
 import com.ziqiang.sushuodorm.entity.vo.UserVo;
 import com.ziqiang.sushuodorm.services.RoomService;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,51 +27,59 @@ public class RoomController {
 
     @PutMapping("/save")
     @RequestMapping("/{occupants}")
-    public boolean save(@PathVariable("occupants") @NotNull List<UserItem> occupants, String roomName) {
-        return roomService.saveRoom(occupants.stream().collect(
-                Collectors.toMap(UserItem::getUserName, userItem -> userItem)), roomName);
+    public ResponseBeanVo<?> save(@PathVariable("occupants") @NotNull List<UserItem> occupants, String roomName) {
+        boolean b = roomService.saveRoom(occupants.stream().collect(
+                Collectors.toMap(UserItem::getUserName, userItem -> userItem, (i1, i2) -> i1, HashMap::new)), roomName);
+        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
     @PutMapping("/update")
     @RequestMapping("/{occupants}")
-    public boolean update(@PathVariable("occupants") @NotNull List<UserItem> occupants) {
-        return roomService.updateRoom(new UserUpdateRequest(), occupants.stream().collect(
-                Collectors.toMap(UserItem::getUserName, userItem -> userItem)));
+    public ResponseBeanVo<?> update(@PathVariable("occupants") @NotNull List<UserItem> occupants) {
+        boolean b = roomService.updateRoom(new UserUpdateRequest(), occupants.stream().collect(
+                Collectors.toMap(UserItem::getUserName, userItem -> userItem, (i1, i2) -> i1, HashMap::new)));
+        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
     @PutMapping("/remove")
     @RequestMapping("/{roomId}")
-    public boolean remove(@PathVariable("roomId") String roomId) {
-        return roomService.removeRoom(roomId);
+    public ResponseBeanVo<?> remove(@PathVariable("roomId") String roomId) {
+        boolean b = roomService.removeRoom(roomId);
+        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
     @PostMapping("/getAllRooms")
-    public List<RoomVo> getAllRooms(@Valid @NotNull RoomQueryRequest roomQueryRequest) {
-        return roomService.getAllRooms(roomQueryRequest).getRecords();
+    public ResponseBeanVo<List<RoomVo>> getAllRooms(@Valid @NotNull RoomQueryRequest roomQueryRequest) {
+        return ResponseBeanVo.ok(roomService.getAllRooms(roomQueryRequest).getRecords());
     }
 
     @PostMapping("/getRoomsByOccupants")
-    public List<RoomVo> getRoomsByOccupants(@NotNull List<String> occupants, @Valid @NotNull RoomQueryRequest roomQueryRequest) {
-        return roomService.getRoomsByOccupants(occupants, roomQueryRequest).getRecords();
+    public ResponseBeanVo<List<RoomVo>> getRoomsByOccupants(@NotNull List<String> occupants,
+                                                            @Valid @NotNull RoomQueryRequest roomQueryRequest) {
+        return ResponseBeanVo.ok(roomService.getRoomsByOccupants(occupants, roomQueryRequest).getRecords());
     }
 
     @PostMapping("/getOccupantsByRoomId")
-    public List<UserVo> getOccupantsByRoomId(@RequestParam String roomId, @Valid @NotNull RoomQueryRequest roomQueryRequest) {
-        return roomService.getOccupantsByRoomId(roomId, roomQueryRequest).getRecords();
+    public ResponseBeanVo<List<UserVo>> getOccupantsByRoomId(@RequestParam String roomId,
+                                                             @Valid @NotNull RoomQueryRequest roomQueryRequest) {
+        return ResponseBeanVo.ok(roomService.getOccupantsByRoomId(roomId, roomQueryRequest).getRecords());
     }
 
     @PostMapping("/searchByOccupant")
-    public List<RoomVo> searchByOccupant(@RequestParam String occupant, @Valid @NotNull RoomQueryRequest roomQueryRequest) {
-        return roomService.searchByOccupant(occupant, roomQueryRequest).getRecords();
+    public ResponseBeanVo<List<RoomVo>> searchByOccupant(@RequestParam String occupant,
+                                                         @Valid @NotNull RoomQueryRequest roomQueryRequest) {
+        return ResponseBeanVo.ok(roomService.searchByOccupant(occupant, roomQueryRequest).getRecords());
     }
 
     @PostMapping("/searchByRoomId")
-    public List<RoomVo> searchByRoomId(@RequestParam String roomId, @Valid @NotNull RoomQueryRequest roomQueryRequest) {
-        return roomService.searchByRoomId(roomId, roomQueryRequest).getRecords();
+    public ResponseBeanVo<List<RoomVo>> searchByRoomId(@RequestParam String roomId,
+                                                       @Valid @NotNull RoomQueryRequest roomQueryRequest) {
+        return ResponseBeanVo.ok(roomService.searchByRoomId(roomId, roomQueryRequest).getRecords());
     }
 
     @PostMapping("/searchByRoomName")
-    public List<RoomVo> searchByRoomName(@RequestParam String roomName, @Valid @NotNull RoomQueryRequest roomQueryRequest) {
-        return roomService.searchByRoomName(roomName, roomQueryRequest).getRecords();
+    public ResponseBeanVo<List<RoomVo>> searchByRoomName(@RequestParam String roomName,
+                                                         @Valid @NotNull RoomQueryRequest roomQueryRequest) {
+        return ResponseBeanVo.ok(roomService.searchByRoomName(roomName, roomQueryRequest).getRecords());
     }
 }

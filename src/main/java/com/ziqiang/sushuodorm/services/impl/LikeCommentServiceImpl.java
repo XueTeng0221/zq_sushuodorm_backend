@@ -12,19 +12,17 @@ import com.ziqiang.sushuodorm.mapper.LikeCommentMapper;
 import com.ziqiang.sushuodorm.services.LikeCommentService;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class LikeCommentServiceImpl extends ServiceImpl<LikeCommentMapper, LikeCommentItem> implements LikeCommentService {
+    @Autowired
     private LikeCommentMapper likeCommentMapper;
+    @Autowired
     private CommentMapper commentMapper;
-
-    public LikeCommentServiceImpl(LikeCommentMapper likeCommentMapper, CommentMapper commentMapper) {
-        this.likeCommentMapper = likeCommentMapper;
-        this.commentMapper = commentMapper;
-    }
 
     @Override
     public boolean save(String userId, Long commentId) {

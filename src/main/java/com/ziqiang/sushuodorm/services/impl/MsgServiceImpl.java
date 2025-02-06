@@ -1,5 +1,6 @@
 package com.ziqiang.sushuodorm.services.impl;
 
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -18,14 +19,10 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class MsgServiceImpl extends ServiceImpl<MsgMapper, MsgItem> implements MsgService {
-    private UserMapper userMapper;
-    private MsgMapper msgMapper;
-
     @Autowired
-    public MsgServiceImpl(UserMapper userMapper, MsgMapper msgMapper) {
-        this.userMapper = userMapper;
-        this.msgMapper = msgMapper;
-    }
+    private UserMapper userMapper;
+    @Autowired
+    private MsgMapper msgMapper;
 
     @Override
     public boolean saveItem(String userId, String content) {
@@ -37,17 +34,17 @@ public class MsgServiceImpl extends ServiceImpl<MsgMapper, MsgItem> implements M
 
     @Override
     public List<MsgItem> getMsgList(String userId) {
-        QueryChainWrapper<MsgItem> queryWrapper = new QueryChainWrapper<>(msgMapper)
-                .eq("is_deleted", false)
-                .eq("user_id", userId);
+        LambdaQueryChainWrapper<MsgItem> queryWrapper = new QueryChainWrapper<>(msgMapper)
+                .eq("is_deleted", false).lambda()
+                .eq(MsgItem::getAuthor, userId);
         return msgMapper.selectList(queryWrapper);
     }
 
     @Override
     public Page<MsgItem> getPage(String userId, int currentPage, int pageSize) {
-        QueryChainWrapper<MsgItem> queryWrapper = new QueryChainWrapper<>(msgMapper)
-                .eq("is_deleted", false)
-                .eq("user_id", userId);
+        LambdaQueryChainWrapper<MsgItem> queryWrapper = new QueryChainWrapper<>(msgMapper)
+                .eq("is_deleted", false).lambda()
+                .eq(MsgItem::getAuthor, userId);
         List<MsgItem> msgList = msgMapper.selectList(queryWrapper);
         return new Page<MsgItem>(currentPage, pageSize).setRecords(msgList);
     }

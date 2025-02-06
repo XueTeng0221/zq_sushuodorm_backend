@@ -1,7 +1,10 @@
 package com.ziqiang.sushuodorm.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.ziqiang.sushuodorm.common.ErrorCode;
+import com.ziqiang.sushuodorm.entity.dto.favorite.FavoriteQueryRequest;
 import com.ziqiang.sushuodorm.entity.item.FavoriteItem;
+import com.ziqiang.sushuodorm.entity.vo.ResponseBeanVo;
 import com.ziqiang.sushuodorm.services.FavoriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,28 +19,34 @@ public class FavoriteController {
     private FavoriteService favoriteService;
 
     @PostMapping("/save")
-    public boolean save(@RequestParam String userId, @RequestParam Long postId) {
-        return favoriteService.save(userId, postId);
+    public ResponseBeanVo<?> save(@RequestParam String userId, @RequestParam Long postId) {
+        boolean b = favoriteService.save(userId, postId);
+        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
     @DeleteMapping("/remove")
-    public boolean remove(@RequestParam String userId, @RequestParam Long postId) {
-        return favoriteService.remove(userId, postId);
+    public ResponseBeanVo<?> remove(@RequestParam String userId, @RequestParam Long postId) {
+        boolean b = favoriteService.remove(userId, postId);
+        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
     @PutMapping("/update")
-    public boolean update(@RequestParam String userId, @RequestParam Long postId) {
-        return favoriteService.update(userId, postId);
+    public ResponseBeanVo<?> update(@RequestParam String userId, @RequestParam Long postId) {
+        boolean b = favoriteService.update(userId, postId);
+        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
     @GetMapping("/getPage")
-    public IPage<FavoriteItem> getPage(@RequestParam String userId, @RequestParam int pageNum, @RequestParam int pageId) {
-        return favoriteService.getPage(userId, pageNum, pageId);
+    public ResponseBeanVo<IPage<FavoriteItem>> getPage(@RequestParam String userId,
+                                                       @RequestBody FavoriteQueryRequest favoriteQueryRequest) {
+        return ResponseBeanVo.ok(favoriteService.getPage(userId,
+                favoriteQueryRequest.getCurrentId(), favoriteQueryRequest.getPageSize()));
     }
 
     @GetMapping("/searchByPostId")
-    public IPage<FavoriteItem> searchByPostId(@RequestParam String userId, @RequestParam Long postId,
-                                              @RequestParam int pageNum, @RequestParam int pageId) {
-        return favoriteService.searchByPostId(userId, postId, pageNum, pageId);
+    public ResponseBeanVo<IPage<FavoriteItem>> searchByPostId(@RequestParam String userId, @RequestParam Long postId,
+                                              @RequestBody FavoriteQueryRequest favoriteQueryRequest) {
+        return ResponseBeanVo.ok(favoriteService.searchByPostId(userId, postId,
+                favoriteQueryRequest.getCurrentId(), favoriteQueryRequest.getPageSize()));
     }
 }

@@ -1,5 +1,6 @@
 package com.ziqiang.sushuodorm.common;
 
+import com.ziqiang.sushuodorm.entity.vo.ResponseBeanVo;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -16,11 +17,6 @@ public class BaseResponse<T> implements Serializable {
         this.message = message;
     }
 
-    public BaseResponse(int code, T data) {
-        this.code = code;
-        this.data = data;
-    }
-
     public BaseResponse(ErrorCode errorCode) {
         this.code = errorCode.getCode();
         this.message = errorCode.getMessage();
@@ -30,13 +26,5 @@ public class BaseResponse<T> implements Serializable {
         this.code = errorCode.getCode();
         this.message = errorCode.getMessage();
         this.data = data;
-    }
-
-    public static <T> BaseResponse<T> error(int code, T data, String message) {
-        return new BaseResponse<>(code, data, message);
-    }
-
-    public static <T> BaseResponse<T> ok(T data, String message) {
-        return new BaseResponse<>(ErrorCode.SUCCESS.getCode(), data, message);
     }
 }

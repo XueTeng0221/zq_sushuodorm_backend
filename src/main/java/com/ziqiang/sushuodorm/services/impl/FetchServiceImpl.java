@@ -13,7 +13,6 @@ import com.ziqiang.sushuodorm.entity.item.order.OrderItem;
 import com.ziqiang.sushuodorm.entity.vo.FetchVo;
 import com.ziqiang.sushuodorm.mapper.FetchMapper;
 import com.ziqiang.sushuodorm.mapper.OrderMapper;
-import com.ziqiang.sushuodorm.mapper.UserMapper;
 import com.ziqiang.sushuodorm.services.FetchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
