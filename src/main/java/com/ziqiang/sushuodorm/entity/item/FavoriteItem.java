@@ -22,7 +22,7 @@ public class FavoriteItem implements Serializable {
     @TableField(value = "username")
     private String username;
     @TableField
-    private java.sql.Date createTime;
+    private Date createTime;
     @TableField
     private Date updateTime;
     @TableLogic

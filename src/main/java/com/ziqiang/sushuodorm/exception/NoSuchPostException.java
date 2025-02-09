@@ -10,6 +10,10 @@ import java.util.List;
 public class NoSuchPostException extends BizException {
     private List<String> missingPosts = new ArrayList<>();
 
+    public NoSuchPostException() {
+        super(ErrorCode.REQUEST_ERROR.getCode(), "帖子不存在，错误码：" + ErrorCode.REQUEST_ERROR.getCode());
+    }
+
     public NoSuchPostException(List<String> missingPosts, int code, String message) {
         super(code, message);
         this.missingPosts = missingPosts;

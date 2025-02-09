@@ -33,7 +33,7 @@ public class PostItem implements Serializable {
     @TableField(value = "favorites")
     private Long favorites;
     @TableId(type = IdType.ASSIGN_ID)
-    private Integer id;
+    private Long id;
     @TableLogic
-    private Integer isDeleted;
+    private Boolean isDeleted;
 }

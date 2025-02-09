@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapp
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ziqiang.sushuodorm.daos.CommentEsDao;
 import com.ziqiang.sushuodorm.entity.dto.comment.CommentQueryRequest;
 import com.ziqiang.sushuodorm.entity.item.CommentItem;
 import com.ziqiang.sushuodorm.entity.item.PostItem;
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service
-@Transactional
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> implements CommentService {
@@ -37,16 +35,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     private LikeCommentMapper likeCommentMapper;
     @Autowired
     private LikePostMapper likePostMapper;
-    @Autowired
-    private CommentEsDao commentEsDao;
 
-    private final Map<Long, Set<CommentItem>> commentTree = new HashMap<>();
+    private Map<Long, Set<CommentItem>> commentTree = new HashMap<>();
 
     @Override
     public boolean addComment(Long postId, String username, String content) {
-        LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda()
+        LambdaQueryChainWrapper<PostItem> postQueryWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .eq(PostItem::getId, postId);
-        PostItem postItem = postMapper.selectOne(queryWrapper);
+        PostItem postItem = postMapper.selectOne(postQueryWrapper);
         CommentItem commentItem = new CommentItem()
                 .setAuthor(username)
                 .setPostId(postId)
@@ -70,7 +66,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
 
         CommentItem replyItem = new CommentItem()
                 .setAuthor(replierName)
-                .setParentId(commentId)
+                .setParentId(commentItem.getPostId())
+                .setId(commentItem.getPostId())
                 .setContent(content)
                 .setReplies(new HashSet<>());
         postItem.getComments().add(replyItem);
@@ -264,7 +261,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
                         .eq(CommentItem::getPostId, postId)
                         .le(CommentItem::getParentId, -1)
                         .orderByDesc(CommentItem::getDate)
-                        .last("limit " + queryRequest.getCurrentId() + ", " + queryRequest.getPageSize())
         );
     }
 

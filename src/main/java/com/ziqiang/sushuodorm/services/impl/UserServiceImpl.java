@@ -81,7 +81,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
     public boolean updateRoomId(String userId, String roomId) {
         LambdaQueryChainWrapper<UserItem> userWrapper = new QueryChainWrapper<>(userMapper).lambda()
                 .eq(UserItem::getUserName, userId)
-                .eq(UserItem::getUserRole, UserRoleEnum.ADMIN.getValue());
+                .eq(UserItem::getUserRole, UserRoleEnum.USER.getValue());
         UserItem userItem = userMapper.selectOne(userWrapper);
         if (userItem.getRoomId().equals(roomId)) {
             return false;
