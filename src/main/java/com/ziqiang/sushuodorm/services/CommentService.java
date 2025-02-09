@@ -14,8 +14,6 @@ public interface CommentService extends IService<CommentItem> {
 
     boolean addReply(Long commentId, String username, String content);
 
-    boolean likeComment(Long commentId);
-
     boolean deleteComment(Long commentId, Long postId);
 
     CommentVo getComment(Long commentId);
@@ -24,9 +22,9 @@ public interface CommentService extends IService<CommentItem> {
 
     IPage<CommentVo> getAllComments(List<String> keywords, CommentQueryRequest queryRequest);
 
-    IPage<CommentVo> getAllReplies(String username, Long commentId, CommentQueryRequest queryRequest);
+    IPage<CommentVo> getAllRepliesByCommentId(String username, Long commentId, CommentQueryRequest queryRequest);
 
-    IPage<CommentVo> getAllReplies(String replierName, String username, CommentQueryRequest queryRequest);
+    IPage<CommentVo> getAllRepliesByUser(String replierName, String username, CommentQueryRequest queryRequest);
 
     int getReplyCount(Long commentId, Long postId);
 

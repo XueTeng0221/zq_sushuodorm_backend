@@ -1,14 +1,10 @@
 package com.ziqiang.sushuodorm.services.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ziqiang.sushuodorm.common.ErrorCode;
-import com.ziqiang.sushuodorm.entity.dto.comment.CommentQueryRequest;
 import com.ziqiang.sushuodorm.entity.dto.post.PostQueryRequest;
 import com.ziqiang.sushuodorm.entity.item.CommentItem;
 import com.ziqiang.sushuodorm.entity.item.PostItem;
@@ -20,12 +16,10 @@ import com.ziqiang.sushuodorm.mapper.PostMapper;
 import com.ziqiang.sushuodorm.services.PostService;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -73,28 +67,9 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implement
 
     @Override
     public IPage<CommentVo> getCommentByPostId(Long postId, PostQueryRequest postQueryRequest) {
-        QueryWrapper<CommentItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("post_id", postId);
-        List<CommentItem> commentItems = commentMapper.selectList(queryWrapper);
-        Map<Long, CommentItem> commentItemMap = commentItems.stream()
-                .collect(Collectors.toMap(CommentItem::getId, commentItem -> commentItem));
-        Map<Long, CommentItem> userNameMap = commentItemMap.values().stream()
-                .collect(Collectors.toMap(CommentItem::getReplyNum, commentItem -> commentItem));
-        commentItems.forEach(commentItem -> {
-            CommentItem relatedComment = userNameMap.get(commentItem.getReplyNum());
-            if (!commentItem.getReplies().isEmpty()) {
-                commentItem.getReplies().forEach(reply -> {
-                    CommentItem relatedReply = userNameMap.get(reply.getReplyNum());
-                    if (ObjectUtils.isNotEmpty(relatedReply)) {
-                        reply.setAuthor(relatedReply.getAuthor());
-                    }
-                });
-            }
-            commentItem.setAuthor(relatedComment.getAuthor());
-        });
         return commentMapper.selectPage(
-                new CommentQueryRequest().getPage(),
-                new QueryWrapper<CommentItem>().lambda().eq(CommentItem::getPostId, postId)
+                new Page<>(postQueryRequest.getCurrentId(), postQueryRequest.getPageSize()),
+                new QueryChainWrapper<>(commentMapper).lambda().eq(CommentItem::getPostId, postId)
         ).convert(commentItem -> new CommentVo()
                 .setId(commentItem.getId())
                 .setContent(commentItem.getContent())
@@ -106,74 +81,80 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implement
     }
 
     @Override
-    public Page<PostItem> getPosts(PostQueryRequest postQueryRequest) throws NoSuchPostException {
+    public Page<PostVo> getPosts(PostQueryRequest postQueryRequest) throws NoSuchPostException {
         LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .like(PostItem::getTitle, postQueryRequest.getTitle())
                 .like(PostItem::getTags, String.join(", ", postQueryRequest.getTags()));
-        Page<PostItem> page = new Page<>(postQueryRequest.getCurrentId(), postQueryRequest.getPageSize());
-        return postMapper.selectPage(page, queryWrapper);
+        List<PostVo> postVoList = new ArrayList<>();
+        List<PostItem> postItems = postMapper.selectList(queryWrapper);
+        postItems.forEach(postItem -> postVoList.add(new PostVo()
+                        .setDate(postItem.getDate())
+                        .setAuthor(postItem.getAuthor())
+                        .setContent(postItem.getContent())
+                        .setTitle(postItem.getTitle())
+                        .setDate(postItem.getDate())
+                        .setComments(postItem.getComments())
+                        .setTags(Arrays.stream(postItem.getTags().split(", ")).toList())));
+        Page<PostVo> page = new Page<>(postQueryRequest.getCurrentId(), postQueryRequest.getPageSize());
+        page.setRecords(postVoList);
+        return page;
     }
 
     @Override
-    public Page<PostItem> searchItemByPostId(List<String> keywords, int pageFrom, int pageSize) throws NoSuchPostException {
-        QueryWrapper<PostItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.like("title", keywords);
-        Page<PostItem> page = new Page<>(pageFrom, pageSize);
-        return postMapper.selectPage(page, queryWrapper);
+    public Page<PostVo> searchItemByPostId(List<String> keywords, PostQueryRequest postQueryRequest) throws NoSuchPostException {
+        LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda();
+        keywords.forEach(keyword -> queryWrapper.or().like(PostItem::getTitle, keyword));
+        List<PostVo> postVoList = new ArrayList<>();
+        List<PostItem> postItems = postMapper.selectList(queryWrapper);
+        postItems.forEach(postItem -> postVoList.add(new PostVo()
+                .setDate(postItem.getDate())
+                .setAuthor(postItem.getAuthor())
+                .setContent(postItem.getContent())
+                .setTitle(postItem.getTitle())
+                .setDate(postItem.getDate())
+                .setComments(postItem.getComments())
+                .setTags(Arrays.stream(postItem.getTags().split(", ")).toList())));
+        Page<PostVo> page = new Page<>(postQueryRequest.getCurrentId(), postQueryRequest.getPageSize());
+        page.setRecords(postVoList);
+        return page;
     }
 
     @Override
     public List<PostItem> getItemByPostId(Long postId) throws NoSuchPostException {
-        QueryWrapper<PostItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", postId);
-        return postMapper.selectList(queryWrapper);
-    }
-
-    @Override
-    public List<PostItem> getItemByPostId(Long postId, PostQueryRequest postQueryRequest) {
-        QueryWrapper<PostItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", postId);
-        if (postQueryRequest.getTitle() != null) {
-            queryWrapper.like("title", postQueryRequest.getTitle());
-        }
-        if (postQueryRequest.getTags() != null) {
-            queryWrapper.like("tags", postQueryRequest.getTags());
-        }
+        LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda()
+                .eq(PostItem::getId, postId);
         return postMapper.selectList(queryWrapper);
     }
 
     @Override
     public PostVo getPostById(Long postId) throws NoSuchPostException {
-        PostItem postItem = postMapper.selectById(postId);
-        if (postItem == null) {
-            throw new NoSuchPostException(ErrorCode.CLIENT_ERROR);
-        }
-        return PostVo.objectToVO(postItem);
+        LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda()
+                .eq(PostItem::getId, postId);
+        PostItem postItem = postMapper.selectOne(queryWrapper);
+        return new PostVo().setTitle(postItem.getTitle())
+                        .setTags(Arrays.stream(postItem.getTags().split(", ")).toList())
+                        .setContent(postItem.getContent())
+                        .setAuthor(postItem.getAuthor())
+                        .setDate(postItem.getDate())
+                        .setLikes(postItem.getLikes());
     }
 
     @Override
     public IPage<PostVo> getItemByUsername(String username, PostQueryRequest postQueryRequest) {
-        QueryWrapper<PostItem> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("author", username);
+        LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda()
+                .eq(PostItem::getAuthor, username);
         List<PostItem> postItems = postMapper.selectList(queryWrapper);
-        if (postItems.isEmpty()) {
-            return new Page<>();
-        }
-        Map<String, String> titleTagMap = postItems.stream()
-                .collect(Collectors.toMap(
-                    item -> item.getId().toString(),
-                    PostItem::getTitle,
-                    (existing, replacement) -> existing,
-                    HashMap::new
-                ));
-        IPage<PostItem> pageResult = postMapper.selectPage(postQueryRequest.getPage(), queryWrapper);
-        return pageResult.convert(postItem -> new PostVo()
-                .setTitle(titleTagMap.getOrDefault(postItem.getId().toString(), ""))
-                .setContent(postItem.getContent())
-                .setAuthor(postItem.getAuthor())
-                .setDate(postItem.getDate())
-                .setLikes(postItem.getLikes())
-                .setComments(postItem.getComments())
-        );
+        Map<String, String> titleTagMap = postItems.stream().collect(
+                Collectors.toMap(PostItem::getTitle, PostItem::getTags, (s1, s2) -> s1, HashMap::new));
+        return postMapper.selectPage(new Page<>(postQueryRequest.getCurrentId(), postQueryRequest.getPageSize()), queryWrapper)
+                .convert(postItem -> new PostVo()
+                    .setTitle(postItem.getTitle())
+                    .setTags(Arrays.stream(titleTagMap.getOrDefault(postItem.getTitle(), "").split(", ")).toList())
+                    .setContent(postItem.getContent())
+                    .setAuthor(postItem.getAuthor())
+                    .setDate(postItem.getDate())
+                    .setLikes(postItem.getLikes())
+                    .setComments(postItem.getComments())
+                );
     }
 }

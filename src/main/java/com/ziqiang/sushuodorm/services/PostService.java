@@ -28,13 +28,11 @@ public interface PostService extends IService<PostItem> {
 
     IPage<CommentVo> getCommentByPostId(Long postId, PostQueryRequest postQueryRequest);
 
-    Page<PostItem> getPosts(PostQueryRequest postQueryRequest) throws NoSuchPostException;
+    Page<PostVo> getPosts(PostQueryRequest postQueryRequest) throws NoSuchPostException;
 
-    Page<PostItem> searchItemByPostId(List<String> keywords, int pageFrom, int pageSize) throws NoSuchPostException;
-
-    List<PostItem> getItemByPostId(Long postId);
-
-    List<PostItem> getItemByPostId(Long postId, PostQueryRequest postQueryRequest);
+    Page<PostVo> searchItemByPostId(List<String> keywords, PostQueryRequest postQueryRequest) throws NoSuchPostException;
 
     IPage<PostVo> getItemByUsername(String username, PostQueryRequest postQueryRequest);
+
+    List<PostItem> getItemByPostId(Long postId);
 }

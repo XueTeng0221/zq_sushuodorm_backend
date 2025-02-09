@@ -15,6 +15,8 @@ import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -49,9 +51,16 @@ public class LikeCommentServiceImpl extends ServiceImpl<LikeCommentMapper, LikeC
         LambdaQueryChainWrapper<LikeCommentItem> queryWrapper = new QueryChainWrapper<>(likeCommentMapper).lambda()
                 .eq(LikeCommentItem::getUserId, userId)
                 .orderByDesc(LikeCommentItem::getDate);
-        return likeCommentMapper.selectPage(new Page<>(pageNum, pageId), queryWrapper).convert(
-                likeCommentItem -> new LikeCommentItem()
-                        .setUserId(likeCommentItem.getUserId())
+        List<LikeCommentItem> likeCommentList = likeCommentMapper.selectList(queryWrapper);
+        likeCommentList.forEach(likeCommentItem -> {
+                LambdaQueryChainWrapper<CommentItem> commentItemQueryWrapper = new QueryChainWrapper<>(commentMapper).lambda()
+                        .eq(CommentItem::getId, likeCommentItem.getCommentId());
+                CommentItem commentItem = commentMapper.selectOne(commentItemQueryWrapper);
+                likeCommentItem.setCommentId(commentItem.getId());
+            }
         );
+        IPage<LikeCommentItem> page = new Page<>(pageNum, pageId);
+        page.setRecords(likeCommentList);
+        return page;
     }
 }

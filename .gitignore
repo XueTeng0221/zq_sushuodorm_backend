@@ -4,6 +4,7 @@ target/
 !.mvn/wrapper/**/
 !**/src/main/**/target/
 !**/src/test/**/target/
+!**/src/test/**/
 /E:\\Java\\mvn-repository/
 
 ### STS ###

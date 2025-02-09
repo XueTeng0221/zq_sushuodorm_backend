@@ -9,12 +9,13 @@ import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 import java.sql.Date;
+import java.util.Comparator;
 import java.util.Set;
 
 @Data
 @Accessors(chain = true)
 @TableName(value = "comment")
-public class CommentItem implements Serializable {
+public class CommentItem implements Serializable, Comparator<CommentItem> {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
     @TableField
@@ -33,6 +34,8 @@ public class CommentItem implements Serializable {
     private Long id;
     @TableField(value = "parent_id")
     private Long parentId;
-    @TableId(type = IdType.AUTO)
-    private Long replyNum;
+
+    public int compare(CommentItem o1, CommentItem o2) {
+        return o1.getDate().compareTo(o2.getDate());
+    }
 }

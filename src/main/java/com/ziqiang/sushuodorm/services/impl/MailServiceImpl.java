@@ -1,6 +1,5 @@
 package com.ziqiang.sushuodorm.services.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
@@ -18,12 +17,7 @@ import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 @EqualsAndHashCode(callSuper = false)
@@ -44,26 +38,24 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
                 .setIsDeleted(false)
                 .setIsRead(false)
                 .setReceivers(receivers);
-        mailMapper.insert(mailItem);
-        return save(mailItem);
+        return mailMapper.insertOrUpdate(mailItem);
     }
 
     @Override
     public boolean remove(String mailId) {
-        QueryWrapper<MailItem> queryWrapper = new QueryWrapper<MailItem>().eq("mailId", Long.parseLong(mailId));
-        mailMapper.delete(queryWrapper);
-        return remove(queryWrapper);
+        LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
+                .eq(MailItem::getId, Long.parseLong(mailId));
+        return mailMapper.delete(queryWrapper) > 0;
     }
 
     @Override
     public boolean reply(String userId, List<UserItem> receivers) {
-        LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
-                .in(MailItem::getReceivers, receivers.stream().collect(
-                        Collectors.toMap(UserItem::getUserName, userItem -> userItem.setUserAvatar(userItem.getUserAvatar()))));
-        return CollectionUtils.isEmpty(receivers) && queryWrapper.list().stream()
-                .map(mailItem -> mailItem
-                        .setIsReplied(true)
-                        .setTitle("Re: " + mailItem.getTitle())
+        LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda();
+        Map<String, UserItem> userItemMap = new HashMap<>();
+        receivers.forEach(receiver -> userItemMap.put(receiver.getUserName(), receiver));
+        queryWrapper.in(MailItem::getReceivers, userItemMap);
+        return CollectionUtils.isEmpty(receivers) && mailMapper.selectList(queryWrapper).stream().map(mailItem ->
+                mailItem.setIsReplied(true).setTitle("Re: " + mailItem.getTitle())
         ).allMatch(mailItem -> mailMapper.updateById(mailItem) > 0);
     }
 
@@ -89,36 +81,42 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
 
     @Override
     public IPage<UserVo> getReceiverByMailId(String mailId, int currentSize, int pageSize) {
-        QueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper)
-                .eq("id", Long.parseLong(mailId));
+        LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
+                .eq(MailItem::getId, Long.parseLong(mailId));
         MailItem mailItem = mailMapper.selectOne(queryWrapper);
-        return new Page<UserVo>(currentSize, pageSize)
-                .setTotal(mailItem.getReceivers().size()).setRecords(
-                        mailItem.getReceivers().keySet().stream().map(
-                        replaced -> new UserVo()
-                        .setUserName(replaced)
-                        .setUserAvatar(mailItem.getReceivers().get(replaced).getUserAvatar()))
-                                .collect(Collectors.toList()));
+        List<UserVo> userVos = new ArrayList<>();
+        mailItem.getReceivers().forEach((receiverName, userItem) -> {
+            userVos.add(new UserVo()
+                    .setUserName(receiverName)
+                    .setUserAvatar(userItem.getUserAvatar())
+                    .setRoomId(userItem.getRoomId()));
+        });
+        Page<UserVo> page = new Page<>(currentSize, pageSize);
+        page.setTotal(mailItem.getReceivers().size()).setRecords(userVos);
+        return page;
     }
 
     @Override
     public IPage<UserVo> getReceiverByUsername(String username, int currentSize, int pageSize) {
         LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
                 .eq(MailItem::getSenderName, username);
-        MailItem sent = mailMapper.selectOne(queryWrapper);
-        Map<String, Set<UserItem>> receiverMap = userMapper.selectList(new QueryWrapper<UserItem>().lambda()
-                .in(UserItem::getUserName, username)).stream()
-                .collect(Collectors.groupingBy(
-                        UserItem::getUserName,
-                        Collectors.mapping(replaced -> replaced, Collectors.toSet()))
-        );
-        return new Page<UserVo>(currentSize, pageSize)
-                .setTotal(receiverMap.size())
-                .setRecords(receiverMap.keySet().stream().map(
-                    userItems -> new UserVo()
-                    .setUserName(userItems)
-                    .setUserAvatar(receiverMap.get(userItems).stream()
-                            .findFirst().orElseThrow().getUserAvatar()))
-                .toList());
+        List<MailItem> mailItems = mailMapper.selectList(queryWrapper);
+        Map<String, Set<UserItem>> receiverMap = new HashMap<>();
+        mailItems.forEach(mailItem ->
+            mailItem.getReceivers().keySet().forEach(receiverName ->
+                receiverMap.putIfAbsent(receiverName, new HashSet<>())
+        ));
+        List<UserVo> userVos = new ArrayList<>();
+        receiverMap.keySet().forEach(receiverName -> {
+            Set<UserItem> userItems = receiverMap.get(receiverName);
+            userVos.addAll(userItems.stream().map(userItem -> new UserVo()
+                    .setUserName(userItem.getUserName())
+                    .setUserAvatar(userItem.getUserAvatar())
+                    .setRoomId(userItem.getRoomId())).toList());
+        });
+        Page<UserVo> page = new Page<>(currentSize, pageSize);
+        page.setRecords(userVos);
+        page.setTotal(receiverMap.size());
+        return page;
     }
 }

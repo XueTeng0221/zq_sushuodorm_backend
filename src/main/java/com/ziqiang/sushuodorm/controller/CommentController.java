@@ -34,12 +34,6 @@ public class CommentController {
         return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
-    @Operation(summary = "点赞评论")
-    @PostMapping("like")
-    public ResponseBeanVo<?> likeComment(@RequestParam Long commentId) {
-        return ResponseBeanVo.ok(commentService.likeComment(commentId));
-    }
-
     @Operation(summary = "删除评论")
     @DeleteMapping("delete")
     public ResponseBeanVo<?> deleteComment(@RequestParam Long commentId, @RequestParam Long postId) {
@@ -69,16 +63,16 @@ public class CommentController {
 
     @Operation(summary = "获取所有回复")
     @GetMapping("getAllReplies")
-    public ResponseBeanVo<List<CommentVo>> getAllReplies(@RequestParam String username,
+    public ResponseBeanVo<List<CommentVo>> getAllRepliesByCommentId(@RequestParam String username,
                                          @RequestParam Long commentId, @RequestBody CommentQueryRequest queryRequest) {
-        return ResponseBeanVo.ok(commentService.getAllReplies(username, commentId, queryRequest).getRecords());
+        return ResponseBeanVo.ok(commentService.getAllRepliesByCommentId(username, commentId, queryRequest).getRecords());
     }
 
     @Operation(summary = "获取用户回复")
     @GetMapping("getAllRepliesByUser")
     public ResponseBeanVo<List<CommentVo>> getAllRepliesByUser(@RequestParam String replierName,
                                                @RequestParam String username, @RequestBody CommentQueryRequest queryRequest) {
-        return ResponseBeanVo.ok(commentService.getAllReplies(replierName, username, queryRequest).getRecords());
+        return ResponseBeanVo.ok(commentService.getAllRepliesByUser(replierName, username, queryRequest).getRecords());
     }
 
     @Operation(summary = "获取评论")

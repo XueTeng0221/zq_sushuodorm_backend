@@ -1,6 +1,5 @@
 package com.ziqiang.sushuodorm.common;
 
-import com.ziqiang.sushuodorm.entity.vo.ResponseBeanVo;
 import lombok.Data;
 
 import java.io.Serializable;

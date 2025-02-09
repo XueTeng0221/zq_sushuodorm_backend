@@ -102,7 +102,6 @@ CREATE TABLE 'comment' (
                          likes BIGINT DEFAULT 0 COMMENT '点赞数',
                          post_id BIGINT NOT NULL COMMENT '帖子ID',
                          parent_id BIGINT COMMENT '父评论ID',
-                         reply_num BIGINT DEFAULT 0 COMMENT '回复数',
                          create_time DATETIME NOT NULL COMMENT '创建时间',
                          update_time DATETIME NOT NULL COMMENT '更新时间'
 ) COMMENT='评论表';

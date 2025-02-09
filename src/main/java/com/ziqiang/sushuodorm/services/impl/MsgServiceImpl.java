@@ -34,16 +34,16 @@ public class MsgServiceImpl extends ServiceImpl<MsgMapper, MsgItem> implements M
 
     @Override
     public List<MsgItem> getMsgList(String userId) {
-        LambdaQueryChainWrapper<MsgItem> queryWrapper = new QueryChainWrapper<>(msgMapper)
-                .eq("is_deleted", false).lambda()
+        LambdaQueryChainWrapper<MsgItem> queryWrapper = new QueryChainWrapper<>(msgMapper).lambda()
+                .eq(MsgItem::getDeleted, false)
                 .eq(MsgItem::getAuthor, userId);
         return msgMapper.selectList(queryWrapper);
     }
 
     @Override
     public Page<MsgItem> getPage(String userId, int currentPage, int pageSize) {
-        LambdaQueryChainWrapper<MsgItem> queryWrapper = new QueryChainWrapper<>(msgMapper)
-                .eq("is_deleted", false).lambda()
+        LambdaQueryChainWrapper<MsgItem> queryWrapper = new QueryChainWrapper<>(msgMapper).lambda()
+                .eq(MsgItem::getDeleted, false)
                 .eq(MsgItem::getAuthor, userId);
         List<MsgItem> msgList = msgMapper.selectList(queryWrapper);
         return new Page<MsgItem>(currentPage, pageSize).setRecords(msgList);

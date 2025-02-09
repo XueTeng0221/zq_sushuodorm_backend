@@ -1,6 +1,7 @@
 package com.ziqiang.sushuodorm.entity.item;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -26,4 +27,7 @@ public class MsgItem implements Serializable {
     private Long id;
     @TableField(value = "replies")
     private Long replies;
+    @TableLogic
+    @TableField(value = "deleted")
+    private Boolean deleted;
 }

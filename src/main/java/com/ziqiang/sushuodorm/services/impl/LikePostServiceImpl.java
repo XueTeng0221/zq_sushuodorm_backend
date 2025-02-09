@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.common.ErrorCode;
+import com.ziqiang.sushuodorm.entity.item.CommentItem;
+import com.ziqiang.sushuodorm.entity.item.LikeCommentItem;
 import com.ziqiang.sushuodorm.entity.item.LikePostItem;
 import com.ziqiang.sushuodorm.entity.item.PostItem;
 import com.ziqiang.sushuodorm.exception.BizException;
@@ -16,6 +18,8 @@ import com.ziqiang.sushuodorm.services.LikePostService;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @EqualsAndHashCode(callSuper = true)
@@ -30,19 +34,14 @@ public class LikePostServiceImpl extends ServiceImpl<LikePostMapper, LikePostIte
     }
 
     @Override
-    public boolean save(String userId, Long postId) {
-        try {
-            LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda()
-                    .eq(PostItem::getAuthor, userId)
-                    .eq(PostItem::getId, postId)
-                    .eq(PostItem::getIsDeleted, false);
-            PostItem postItem = postMapper.selectOne(queryWrapper);
-            postItem.setLikes(postItem.getLikes() + 1);
-            return likePostMapper.insert(new LikePostItem().setPostId(postId)) > 0;
-        } catch (BizException e) {
-            log.error("Error occurred while fetching posts: ", e);
-            throw new NoSuchPostException(ErrorCode.CLIENT_ERROR);
-        }
+    public boolean save(String userId, Long postId) throws NoSuchPostException {
+        LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda()
+                .eq(PostItem::getAuthor, userId)
+                .eq(PostItem::getId, postId)
+                .eq(PostItem::getIsDeleted, false);
+        PostItem postItem = postMapper.selectOne(queryWrapper);
+        postItem.setLikes(postItem.getLikes() + 1);
+        return likePostMapper.insert(new LikePostItem().setPostId(postId)) > 0;
     }
 
     @Override
@@ -51,10 +50,8 @@ public class LikePostServiceImpl extends ServiceImpl<LikePostMapper, LikePostIte
                 .eq(LikePostItem::getUserId, userId)
                 .eq(LikePostItem::getPostId, postId)
                 .eq(LikePostItem::getIsDeleted, false);
-        QueryChainWrapper<PostItem> postWrapper = new QueryChainWrapper<>(postMapper)
-                .eq("id", userId)
-                .eq("post_id", postId)
-                .eq("is_deleted", false);
+        LambdaQueryChainWrapper<PostItem> postWrapper = new QueryChainWrapper<>(postMapper).lambda()
+                .eq(PostItem::getId, postId);
         PostItem postItem = postMapper.selectOne(postWrapper);
         postItem.setLikes(postItem.getLikes() - 1);
         return postMapper.updateById(postItem) > 0 && likePostMapper.delete(queryWrapper) > 0;
@@ -66,10 +63,17 @@ public class LikePostServiceImpl extends ServiceImpl<LikePostMapper, LikePostIte
                 .eq(LikePostItem::getUserId, userId)
                 .eq(LikePostItem::getIsDeleted, false)
                 .orderByDesc(LikePostItem::getDate);
-        return likePostMapper.selectPage(new Page<>(pageNum, pageId), queryWrapper).convert(
-                likePostItem -> new LikePostItem()
-                        .setUserId(likePostItem.getUserId())
+        List<LikePostItem> likePostList = likePostMapper.selectList(queryWrapper);
+        likePostList.forEach(likePostItem -> {
+                    LambdaQueryChainWrapper<PostItem> commentItemQueryWrapper = new QueryChainWrapper<>(postMapper).lambda()
+                            .eq(PostItem::getId, likePostItem.getPostId());
+                    PostItem postItem = postMapper.selectOne(commentItemQueryWrapper);
+                    likePostItem.setPostId(Long.valueOf(postItem.getId()));
+                }
         );
+        IPage<LikePostItem> page = new Page<>(pageNum, pageId);
+        page.setRecords(likePostList);
+        return page;
     }
 }
 
