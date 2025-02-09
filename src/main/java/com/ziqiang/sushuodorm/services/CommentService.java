@@ -6,13 +6,14 @@ import com.ziqiang.sushuodorm.entity.dto.comment.CommentQueryRequest;
 import com.ziqiang.sushuodorm.entity.item.CommentItem;
 import com.ziqiang.sushuodorm.entity.vo.CommentVo;
 
+import java.sql.Date;
 import java.util.List;
 
 public interface CommentService extends IService<CommentItem> {
 
-    boolean addComment(Long postId, String username, String content);
+    boolean addComment(Date date, Long postId, String username, String content);
 
-    boolean addReply(Long commentId, String username, String content);
+    boolean addReply(Date date, Long commentId, String username, String content);
 
     boolean deleteComment(Long commentId, Long postId);
 
@@ -22,9 +23,9 @@ public interface CommentService extends IService<CommentItem> {
 
     IPage<CommentVo> getAllComments(List<String> keywords, CommentQueryRequest queryRequest);
 
-    IPage<CommentVo> getAllRepliesByCommentId(String username, Long commentId, CommentQueryRequest queryRequest);
+    IPage<CommentVo> getAllRepliesByCommentId(String username, Long postId, Long commentId, CommentQueryRequest queryRequest);
 
-    IPage<CommentVo> getAllRepliesByUser(String replierName, String username, CommentQueryRequest queryRequest);
+    IPage<CommentVo> getAllRepliesByUser(String replierName, String username, Long postId, CommentQueryRequest queryRequest);
 
     int getReplyCount(Long commentId, Long postId);
 

@@ -5,6 +5,7 @@ import com.ziqiang.sushuodorm.entity.dto.comment.CommentQueryRequest;
 import com.ziqiang.sushuodorm.entity.item.CommentItem;
 import com.ziqiang.sushuodorm.entity.vo.CommentVo;
 import com.ziqiang.sushuodorm.entity.vo.ResponseBeanVo;
+import com.ziqiang.sushuodorm.exception.NoSuchPostException;
 import com.ziqiang.sushuodorm.services.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.sql.Date;
 
 @RestController
 @RequestMapping("评论")
@@ -22,15 +24,15 @@ public class CommentController {
 
     @Operation(summary = "添加评论")
     @PostMapping("comment")
-    public ResponseBeanVo<?> addComment(@RequestParam Long postId, @RequestParam String username, @RequestParam String content) {
-        boolean b = commentService.addComment(postId, username, content);
+    public ResponseBeanVo<?> addComment(@RequestParam Date date, @RequestParam Long postId, @RequestParam String username, @RequestParam String content) {
+        boolean b = commentService.addComment(date, postId, username, content);
         return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
     @Operation(summary = "添加回复")
     @PostMapping("reply")
-    public ResponseBeanVo<?> addReply(@RequestParam Long commentId, @RequestParam String username, @RequestParam String content) {
-        boolean b = commentService.addReply(commentId, username, content);
+    public ResponseBeanVo<?> addReply(@RequestParam Date date, @RequestParam Long commentId, @RequestParam String username, @RequestParam String content) {
+        boolean b = commentService.addReply(date, commentId, username, content);
         return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
@@ -63,16 +65,21 @@ public class CommentController {
 
     @Operation(summary = "获取所有回复")
     @GetMapping("getAllReplies")
-    public ResponseBeanVo<List<CommentVo>> getAllRepliesByCommentId(@RequestParam String username,
-                                         @RequestParam Long commentId, @RequestBody CommentQueryRequest queryRequest) {
-        return ResponseBeanVo.ok(commentService.getAllRepliesByCommentId(username, commentId, queryRequest).getRecords());
+    public ResponseBeanVo<?> getAllRepliesByCommentId(@RequestParam String username, @RequestParam Long commentId,
+                                                                    @RequestParam Long postId, @RequestBody CommentQueryRequest queryRequest) {
+        try {
+            return ResponseBeanVo.ok(commentService.getAllRepliesByCommentId(username, postId, commentId, queryRequest).getRecords());
+        } catch (NoSuchPostException e) {
+            log.debug("getAllRepliesByCommentId: {}", e.getMessage());
+            return ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
+        }
     }
 
     @Operation(summary = "获取用户回复")
     @GetMapping("getAllRepliesByUser")
-    public ResponseBeanVo<List<CommentVo>> getAllRepliesByUser(@RequestParam String replierName,
-                                               @RequestParam String username, @RequestBody CommentQueryRequest queryRequest) {
-        return ResponseBeanVo.ok(commentService.getAllRepliesByUser(replierName, username, queryRequest).getRecords());
+    public ResponseBeanVo<List<CommentVo>> getAllRepliesByUser(@RequestParam String replierName, @RequestParam String username,
+                                                               @RequestParam Long postId, @RequestBody CommentQueryRequest queryRequest) {
+        return ResponseBeanVo.ok(commentService.getAllRepliesByUser(replierName, username, postId, queryRequest).getRecords());
     }
 
     @Operation(summary = "获取评论")
