@@ -2,7 +2,6 @@ package com.ziqiang.sushuodorm.controller;
 
 import com.ziqiang.sushuodorm.common.ErrorCode;
 import com.ziqiang.sushuodorm.entity.dto.room.RoomQueryRequest;
-import com.ziqiang.sushuodorm.entity.dto.user.UserUpdateRequest;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.entity.vo.ResponseBeanVo;
 import com.ziqiang.sushuodorm.entity.vo.RoomVo;
@@ -25,24 +24,16 @@ public class RoomController {
     @Autowired
     private RoomService roomService;
 
-    @PutMapping("/save")
-    @PostMapping("/{occupants}")
+    @PutMapping("/{occupants}")
+    @PostMapping("/save")
     public ResponseBeanVo<?> save(@PathVariable("occupants") @NotNull List<UserItem> occupants, String roomName) {
         boolean b = roomService.saveRoom(occupants.stream().collect(
                 Collectors.toMap(UserItem::getUserName, userItem -> userItem, (i1, i2) -> i1, HashMap::new)), roomName);
         return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
-    @PutMapping("/update")
-    @PostMapping("/{occupants}")
-    public ResponseBeanVo<?> update(@PathVariable("occupants") @NotNull List<UserItem> occupants) {
-        boolean b = roomService.updateRoom(new UserUpdateRequest(), occupants.stream().collect(
-                Collectors.toMap(UserItem::getUserName, userItem -> userItem, (i1, i2) -> i1, HashMap::new)));
-        return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
-    }
-
-    @PutMapping("/remove")
-    @PostMapping("/{roomId}")
+    @PutMapping("/{roomId}")
+    @PostMapping("/remove")
     public ResponseBeanVo<?> remove(@PathVariable("roomId") String roomId) {
         boolean b = roomService.removeRoom(roomId);
         return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);

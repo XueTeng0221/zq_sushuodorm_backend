@@ -3,7 +3,6 @@ package com.ziqiang.sushuodorm.services;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ziqiang.sushuodorm.entity.dto.room.RoomQueryRequest;
-import com.ziqiang.sushuodorm.entity.dto.user.UserUpdateRequest;
 import com.ziqiang.sushuodorm.entity.item.RoomItem;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.entity.vo.RoomVo;
@@ -14,8 +13,6 @@ import java.util.Map;
 
 public interface RoomService extends IService<RoomItem> {
     boolean saveRoom(Map<String, UserItem> occupants, String roomName);
-
-    boolean updateRoom(UserUpdateRequest updateRequest, Map<String, UserItem> occupants);
 
     boolean removeRoom(String roomId);
 

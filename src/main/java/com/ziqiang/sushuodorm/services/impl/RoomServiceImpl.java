@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.entity.dto.room.RoomQueryRequest;
-import com.ziqiang.sushuodorm.entity.dto.user.UserUpdateRequest;
 import com.ziqiang.sushuodorm.entity.item.RoomItem;
 import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.entity.vo.RoomVo;
@@ -42,20 +41,6 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, RoomItem> implement
         occupants.forEach((key, value) -> userMapper.updateById(
                 value.setRoomId(roomName.substring(roomName.indexOf("-") + 1))));
         return roomMapper.insert(roomItem) > 0;
-    }
-
-    public boolean updateRoom(UserUpdateRequest userUpdateRequest, Map<String, UserItem> occupants) {
-        LambdaQueryChainWrapper<RoomItem> roomWrapper = new QueryChainWrapper<>(roomMapper).lambda()
-                .eq(RoomItem::getRoomId, userUpdateRequest.getRoomId());
-        RoomItem roomItem = new RoomItem()
-                .setOccupants(occupants)
-                .setRoomName(userUpdateRequest.getRoomId())
-                .setRoomId(Integer.parseInt(
-                        userUpdateRequest.getRoomId().substring(userUpdateRequest.getRoomId().indexOf("-") + 1)))
-                .setDormName(userUpdateRequest.getRoomId().substring(0, userUpdateRequest.getRoomId().indexOf("-")));
-        occupants.forEach((key, value) -> userMapper.updateById(
-                value.setRoomId(userUpdateRequest.getRoomId().substring(userUpdateRequest.getRoomId().indexOf("-") + 1))));
-        return roomMapper.update(roomItem, roomWrapper) > 0;
     }
 
     public boolean removeRoom(String roomId) {
@@ -127,7 +112,8 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, RoomItem> implement
                 .like(RoomItem::getDormName, roomId.substring(0, roomId.indexOf("-")));
         List<RoomItem> roomItems = roomMapper.selectList(queryWrapper);
         List<RoomVo> roomVos = new ArrayList<>();
-        roomItems.forEach(roomItem -> roomVos.add(new RoomVo()
+        roomItems.forEach(roomItem -> roomVos.add(
+            new RoomVo()
                 .setRoomName(roomItem.getRoomName())
                 .setDormName(roomItem.getDormName())
                 .setCapacity(roomItem.getCapacity())
@@ -145,7 +131,8 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, RoomItem> implement
                 .like(RoomItem::getRoomName, roomName);
         List<RoomItem> roomItems = roomMapper.selectList(queryWrapper);
         List<RoomVo> roomVos = new ArrayList<>();
-        roomItems.forEach(roomItem -> roomVos.add(new RoomVo()
+        roomItems.forEach(roomItem -> roomVos.add(
+            new RoomVo()
                 .setRoomName(roomItem.getRoomName())
                 .setDormName(roomItem.getDormName())
                 .setCapacity(roomItem.getCapacity())
