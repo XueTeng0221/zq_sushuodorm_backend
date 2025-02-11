@@ -18,8 +18,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -68,75 +69,91 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, RoomItem> implement
     }
 
     @Override
-    public IPage<RoomVo> getAllRooms(RoomQueryRequest roomQueryRequest) {
+    public IPage<RoomVo> getRoomsByOccupants(String roomName, List<String> occupants, RoomQueryRequest roomQueryRequest) {
         LambdaQueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper).lambda()
-                .like(RoomItem::getRoomName, roomQueryRequest.getRoomName());
-        roomQueryRequest.getOccupants().forEach((key, value) -> queryWrapper.like(RoomItem::getOccupants, value.getUserName()));
-        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
-                .convert(roomItem -> new RoomVo()
-                        .setOccupantMap(roomItem.getOccupants())
-                        .setDormName(roomItem.getDormName())
-                        .setRoomName(roomItem.getRoomName()));
-    }
+                .eq(RoomItem::getRoomName, roomName);
+        List<RoomItem> roomItems = roomMapper.selectList(queryWrapper);
 
-    @Override
-    public IPage<RoomVo> getRoomsByOccupants(List<String> occupants, RoomQueryRequest roomQueryRequest) {
-        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper)
-                .like("roomName", roomQueryRequest.getRoomName());
-        if (!CollectionUtils.isEmpty(roomQueryRequest.getOccupants())) {
-            Map<String, UserItem> occupantMap = roomQueryRequest.getOccupants();
-            if (occupantMap.keySet().containsAll(occupants)) {
-                occupantMap.forEach((key, value) -> queryWrapper.like("occupantName", key));
-            }
-        }
-        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
-                .convert(roomItem -> new RoomVo()
-                        .setOccupantMap(roomItem.getOccupants())
-                        .setDormName(roomItem.getDormName())
-                        .setRoomName(roomItem.getRoomName()));
+        LambdaQueryChainWrapper<UserItem> userQueryWrapper = new QueryChainWrapper<>(userMapper).lambda()
+                .in(UserItem::getUserName, occupants);
+        List<UserItem> userItems = userMapper.selectList(userQueryWrapper);
+
+        Map<String, String> usernameRoomNameMap = new HashMap<>();
+        Map<String, RoomItem> roomNameRoomItemMap = new HashMap<>();
+
+        userItems.forEach(userItem -> usernameRoomNameMap.put(userItem.getUserName(), userItem.getRoomId()));
+        roomItems.forEach(roomItem -> roomNameRoomItemMap.put(roomItem.getRoomName(), roomItem));
+        Map<String, Map<String, UserItem>> roomNameOccupantsMap = new HashMap<>();
+        usernameRoomNameMap.forEach((key, value) -> {
+            Map<String, UserItem> occupantMap = roomNameRoomItemMap.get(value).getOccupants();
+            roomNameOccupantsMap.put(value, occupantMap);
+        });
+        List<RoomVo> roomVos = new ArrayList<>();
+        roomItems.forEach(roomItem -> roomVos.add(new RoomVo()
+                .setRoomName(roomItem.getRoomName())
+                .setDormName(roomItem.getRoomName().substring(0, roomItem.getRoomName().indexOf('-')))
+                .setCapacity(roomItem.getCapacity())
+                .setOccupantMap(roomNameOccupantsMap.getOrDefault(roomItem.getRoomName(), new HashMap<>()))
+                .setRoomId(Integer.parseInt(roomItem.getRoomName().substring(roomItem.getRoomName().indexOf('-') + 1)))
+            )
+        );
+        IPage<RoomVo> page = new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize());
+        page.setRecords(roomVos);
+        return page;
     }
 
     @Override
     public IPage<UserVo> getOccupantsByRoomId(String roomId, RoomQueryRequest roomQueryRequest) {
-        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper)
-                .eq("room_id", roomId);
-        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
-                .convert(roomItem -> new UserVo().setRoomId(roomId));
+        LambdaQueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper).lambda()
+                .eq(RoomItem::getRoomId, roomId)
+                .like(RoomItem::getDormName, roomQueryRequest.getDormName());
+        RoomItem roomItem = roomMapper.selectOne(queryWrapper);
+        List<UserItem> userItems = new ArrayList<>(roomItem.getOccupants().values());
+        List<UserVo> userVos = new ArrayList<>();
+        userItems.forEach(userItem -> userVos.add(new UserVo()
+            .setUserName(userItem.getUserName())
+            .setUserAvatar(userItem.getUserAvatar())
+            .setRoomId(userItem.getRoomId()))
+        );
+        IPage<UserVo> page = new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize());
+        page.setRecords(userVos);
+        return page;
     }
 
     @Override
-    public IPage<RoomVo> searchByOccupant(String occupant, RoomQueryRequest roomQueryRequest) {
-        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper);
-        if (!CollectionUtils.isEmpty(roomQueryRequest.getOccupants()) && roomQueryRequest.getOccupants().containsKey(occupant)) {
-            return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
-                    .convert(roomItem -> new RoomVo()
-                            .setOccupantMap(roomItem.getOccupants())
-                            .setDormName(roomItem.getDormName())
-                            .setRoomName(roomItem.getRoomName()));
-        }
-        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
-                .convert(roomItem -> new RoomVo());
-    }
-
-    @Override
-    public IPage<RoomVo> searchByRoomId(String roomId, RoomQueryRequest roomQueryRequest) {
-        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper)
-                .eq("roomId", Integer.parseInt(roomId.substring(roomId.indexOf("-") + 1)));
-        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
-                .convert(roomItem -> new RoomVo()
-                        .setOccupantMap(roomItem.getOccupants())
-                        .setDormName(roomItem.getDormName())
-                );
+    public IPage<RoomVo> searchByRoomId(String dormName, String roomId, RoomQueryRequest roomQueryRequest) {
+        LambdaQueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper).lambda()
+                .like(RoomItem::getRoomId, Integer.parseInt(roomId.substring(roomId.indexOf("-") + 1)))
+                .like(RoomItem::getDormName, roomId.substring(9, roomId.indexOf("-")));
+        List<RoomItem> roomItems = roomMapper.selectList(queryWrapper);
+        List<RoomVo> roomVos = new ArrayList<>();
+        roomItems.forEach(roomItem -> roomVos.add(new RoomVo()
+                .setRoomName(roomItem.getRoomName())
+                .setDormName(roomItem.getDormName())
+                .setCapacity(roomItem.getCapacity())
+                .setOccupantMap(roomItem.getOccupants())
+                .setRoomId(Integer.parseInt(roomItem.getRoomName().substring(roomItem.getRoomName().indexOf('-') + 1)))
+        ));
+        IPage<RoomVo> page = new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize());
+        page.setRecords(roomVos);
+        return page;
     }
 
     @Override
     public IPage<RoomVo> searchByRoomName(String roomName, RoomQueryRequest roomQueryRequest) {
-        QueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper)
-                .like("roomName", roomName);
-        return queryWrapper.page(new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize()))
-                .convert(roomItem -> new RoomVo()
-                        .setOccupantMap(roomItem.getOccupants())
-                        .setDormName(roomItem.getDormName())
-                );
+        LambdaQueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper).lambda()
+                .like(RoomItem::getRoomName, roomName);
+        List<RoomItem> roomItems = roomMapper.selectList(queryWrapper);
+        List<RoomVo> roomVos = new ArrayList<>();
+        roomItems.forEach(roomItem -> roomVos.add(new RoomVo()
+                .setRoomName(roomItem.getRoomName())
+                .setDormName(roomItem.getDormName())
+                .setCapacity(roomItem.getCapacity())
+                .setOccupantMap(roomItem.getOccupants())
+                .setRoomId(Integer.parseInt(roomItem.getRoomName().substring(roomItem.getRoomName().indexOf('-') + 1)))
+        ));
+        IPage<RoomVo> page = new Page<>(roomQueryRequest.getCurrentId(), roomQueryRequest.getPageSize());
+        page.setRecords(roomVos);
+        return page;
     }
 }

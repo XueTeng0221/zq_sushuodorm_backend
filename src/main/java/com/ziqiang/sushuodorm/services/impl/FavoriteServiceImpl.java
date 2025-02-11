@@ -8,17 +8,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.entity.item.FavoriteItem;
 import com.ziqiang.sushuodorm.mapper.FavoriteMapper;
 import com.ziqiang.sushuodorm.services.FavoriteService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
 public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, FavoriteItem> implements FavoriteService {
-    private final FavoriteMapper favoriteMapper;
-
-    public FavoriteServiceImpl(FavoriteMapper favoriteMapper) {
-        this.favoriteMapper = favoriteMapper;
-    }
+    @Autowired
+    private FavoriteMapper favoriteMapper;
 
     @Override
     public boolean save(String userId, Long postId) {

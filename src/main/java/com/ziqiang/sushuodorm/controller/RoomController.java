@@ -26,7 +26,7 @@ public class RoomController {
     private RoomService roomService;
 
     @PutMapping("/save")
-    @RequestMapping("/{occupants}")
+    @PostMapping("/{occupants}")
     public ResponseBeanVo<?> save(@PathVariable("occupants") @NotNull List<UserItem> occupants, String roomName) {
         boolean b = roomService.saveRoom(occupants.stream().collect(
                 Collectors.toMap(UserItem::getUserName, userItem -> userItem, (i1, i2) -> i1, HashMap::new)), roomName);
@@ -34,7 +34,7 @@ public class RoomController {
     }
 
     @PutMapping("/update")
-    @RequestMapping("/{occupants}")
+    @PostMapping("/{occupants}")
     public ResponseBeanVo<?> update(@PathVariable("occupants") @NotNull List<UserItem> occupants) {
         boolean b = roomService.updateRoom(new UserUpdateRequest(), occupants.stream().collect(
                 Collectors.toMap(UserItem::getUserName, userItem -> userItem, (i1, i2) -> i1, HashMap::new)));
@@ -42,21 +42,16 @@ public class RoomController {
     }
 
     @PutMapping("/remove")
-    @RequestMapping("/{roomId}")
+    @PostMapping("/{roomId}")
     public ResponseBeanVo<?> remove(@PathVariable("roomId") String roomId) {
         boolean b = roomService.removeRoom(roomId);
         return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
-    @PostMapping("/getAllRooms")
-    public ResponseBeanVo<List<RoomVo>> getAllRooms(@Valid @NotNull RoomQueryRequest roomQueryRequest) {
-        return ResponseBeanVo.ok(roomService.getAllRooms(roomQueryRequest).getRecords());
-    }
-
     @PostMapping("/getRoomsByOccupants")
-    public ResponseBeanVo<List<RoomVo>> getRoomsByOccupants(@NotNull List<String> occupants,
+    public ResponseBeanVo<List<RoomVo>> getRoomsByOccupants(@RequestParam String roomName, @NotNull List<String> occupants,
                                                             @Valid @NotNull RoomQueryRequest roomQueryRequest) {
-        return ResponseBeanVo.ok(roomService.getRoomsByOccupants(occupants, roomQueryRequest).getRecords());
+        return ResponseBeanVo.ok(roomService.getRoomsByOccupants(roomName, occupants, roomQueryRequest).getRecords());
     }
 
     @PostMapping("/getOccupantsByRoomId")
@@ -65,16 +60,10 @@ public class RoomController {
         return ResponseBeanVo.ok(roomService.getOccupantsByRoomId(roomId, roomQueryRequest).getRecords());
     }
 
-    @PostMapping("/searchByOccupant")
-    public ResponseBeanVo<List<RoomVo>> searchByOccupant(@RequestParam String occupant,
-                                                         @Valid @NotNull RoomQueryRequest roomQueryRequest) {
-        return ResponseBeanVo.ok(roomService.searchByOccupant(occupant, roomQueryRequest).getRecords());
-    }
-
     @PostMapping("/searchByRoomId")
     public ResponseBeanVo<List<RoomVo>> searchByRoomId(@RequestParam String roomId,
                                                        @Valid @NotNull RoomQueryRequest roomQueryRequest) {
-        return ResponseBeanVo.ok(roomService.searchByRoomId(roomId, roomQueryRequest).getRecords());
+        return ResponseBeanVo.ok(roomService.searchByRoomId(roomId, roomId, roomQueryRequest).getRecords());
     }
 
     @PostMapping("/searchByRoomName")

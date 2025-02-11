@@ -35,7 +35,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implement
     public boolean insertPost(String title) {
         PostItem postItem = new PostItem()
                 .setTitle(title)
-                .setIsDeleted(0);
+                .setIsDeleted(false)
+                .setComments(new HashSet<>());
         return postMapper.insert(postItem) > 0;
     }
 
@@ -43,7 +44,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, PostItem> implement
     public boolean insertPost(String title, List<String> tags) {
         PostItem postItem = new PostItem()
                 .setTitle(title)
-                .setIsDeleted(0)
+                .setIsDeleted(false)
+                .setComments(new HashSet<>())
                 .setTags(String.join(",", tags));
         return postMapper.insert(postItem) > 0;
     }
