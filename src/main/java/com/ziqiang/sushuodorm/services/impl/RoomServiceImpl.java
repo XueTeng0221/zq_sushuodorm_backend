@@ -124,7 +124,7 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, RoomItem> implement
     public IPage<RoomVo> searchByRoomId(String dormName, String roomId, RoomQueryRequest roomQueryRequest) {
         LambdaQueryChainWrapper<RoomItem> queryWrapper = new QueryChainWrapper<>(roomMapper).lambda()
                 .like(RoomItem::getRoomId, Integer.parseInt(roomId.substring(roomId.indexOf("-") + 1)))
-                .like(RoomItem::getDormName, roomId.substring(9, roomId.indexOf("-")));
+                .like(RoomItem::getDormName, roomId.substring(0, roomId.indexOf("-")));
         List<RoomItem> roomItems = roomMapper.selectList(queryWrapper);
         List<RoomVo> roomVos = new ArrayList<>();
         roomItems.forEach(roomItem -> roomVos.add(new RoomVo()
