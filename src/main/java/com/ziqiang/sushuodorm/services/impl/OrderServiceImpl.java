@@ -8,8 +8,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.entity.dto.item.FetchQueryRequest;
 import com.ziqiang.sushuodorm.entity.dto.item.OrderQueryRequest;
 import com.ziqiang.sushuodorm.entity.dto.item.OrderUpdateRequest;
-import com.ziqiang.sushuodorm.entity.enums.OrderStatusEnum;
 import com.ziqiang.sushuodorm.entity.item.RoomItem;
+import com.ziqiang.sushuodorm.entity.item.UserItem;
 import com.ziqiang.sushuodorm.entity.item.order.FetchItem;
 import com.ziqiang.sushuodorm.entity.item.order.OrderItem;
 import com.ziqiang.sushuodorm.entity.vo.FetchVo;
@@ -22,10 +22,10 @@ import com.ziqiang.sushuodorm.services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implements OrderService {
@@ -40,13 +40,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implem
 
     @Override
     public boolean save(String orderId, String userId, String roomId, String toDormId, String title, String description) {
-        return orderMapper.insert(new OrderItem()
+        OrderItem orderItem = new OrderItem()
                 .setOrderId(orderId)
                 .setUserId(userId)
                 .setTitle(title)
                 .setFromDormId(roomId.substring(0, roomId.indexOf("-")))
                 .setToDormId(toDormId)
-                .setDescription(description)) > 0;
+                .setDescription(description);
+        return orderMapper.insertOrUpdate(orderItem);
     }
 
     @Override
@@ -62,99 +63,118 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implem
         LambdaQueryChainWrapper<OrderItem> queryWrapper = new QueryChainWrapper<>(orderMapper).lambda()
                 .eq(OrderItem::getOrderId, orderId)
                 .eq(OrderItem::getUserId, userId);
-        fetchMapper.insert(new FetchItem()
+        OrderItem orderItem = orderMapper.selectOne(queryWrapper);
+        FetchItem fetchItem = new FetchItem()
                 .setFetchId(orderId)
                 .setUserId(userId)
-                .setToDormId(orderUpdateRequest.getStatus() == OrderStatusEnum.FINISHED ?
-                        orderUpdateRequest.getToDormId() : null));
-        return orderMapper.update(new OrderItem()
-                .setTitle(title)
-                .setDescription(description)
-                .setStatus(orderUpdateRequest.getStatus()), queryWrapper) > 0;
-    }
-
-    public IPage<OrderVo> getOrdersByRoomId(String roomId, OrderQueryRequest orderQueryRequest) {
-        LambdaQueryChainWrapper<OrderItem> orderWrapper = new QueryChainWrapper<>(orderMapper).lambda()
-                .like(OrderItem::getFromDormId, roomId)
-                .orderByDesc(OrderItem::getStartDate);
-        Map<String, RoomItem> occupantRoomMap = roomMapper.selectList(new QueryChainWrapper<>(roomMapper).lambda()
-                .eq(RoomItem::getRoomId, userMapper.selectById(roomId).getRoomId())).stream().collect(
-                Collectors.toMap(RoomItem::getRoomName, roomItem -> roomItem, (a, b) -> a, HashMap::new));
-        LambdaQueryChainWrapper<RoomItem> roomWrapper = new QueryChainWrapper<>(roomMapper).lambda()
-                .in(RoomItem::getRoomId, occupantRoomMap.keySet());
-        List<RoomItem> roomItems = roomMapper.selectList(roomWrapper);
-        occupantRoomMap.forEach((key, value) -> occupantRoomMap.put(key, roomItems.stream().filter(roomItem -> roomItem.getRoomId()
-                .equals(value.getRoomId())).findFirst().orElse(null)));
-        return orderMapper.selectPage(new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize()), orderWrapper)
-                .convert(orderItem -> new OrderVo()
-                        .setUserId(orderItem.getUserId())
-                        .setFromDormId(occupantRoomMap.get(orderItem.getFromDormId()).getDormName())
-                        .setToDormId(occupantRoomMap.get(orderItem.getToDormId()).getDormName())
-                        .setStartDate(orderItem.getStartDate())
-                );
+                .setStartDate(orderUpdateRequest.getStartDate())
+                .setEndDate(orderUpdateRequest.getEndDate());
+        return orderMapper.insertOrUpdate(orderItem) && fetchMapper.insertOrUpdate(fetchItem);
     }
 
     public IPage<OrderVo> getOrdersByFromDorm(String fromDormId, OrderQueryRequest orderQueryRequest) {
-        LambdaQueryChainWrapper<OrderItem> queryWrapper = new QueryChainWrapper<>(orderMapper).lambda()
+        LambdaQueryChainWrapper<OrderItem> orderWrapper = new QueryChainWrapper<>(orderMapper).lambda()
                 .eq(OrderItem::getFromDormId, fromDormId)
                 .orderByDesc(OrderItem::getStartDate);
-        List<OrderItem> orderItems = orderMapper.selectList(queryWrapper);
-        Map<String, RoomItem> occupantRoomMap = roomMapper.selectList(new QueryChainWrapper<>(roomMapper).lambda()
-                .eq(RoomItem::getRoomId, userMapper.selectById(orderItems.get(0).getUserId()).getRoomId())).stream().collect(
-                Collectors.toMap(RoomItem::getRoomName, roomItem -> roomItem, (a, b) -> a, HashMap::new));
-        return orderMapper.selectPage(new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize()), queryWrapper)
-                .convert(orderItem -> new OrderVo()
-                        .setUserId(orderItem.getUserId())
-                        .setFromDormId(occupantRoomMap.get(orderItem.getFromDormId()).getDormName())
-                        .setToDormId(occupantRoomMap.get(orderItem.getToDormId()).getDormName())
-                        .setStartDate(orderItem.getStartDate())
-                );
+        List<OrderItem> orderItems = orderMapper.selectList(orderWrapper);
+
+        LambdaQueryChainWrapper<RoomItem> roomWrapper = new QueryChainWrapper<>(roomMapper).lambda()
+                .eq(RoomItem::getRoomId, userMapper.selectById(orderItems.get(0).getUserId()).getRoomId());
+        RoomItem roomItem = roomMapper.selectOne(roomWrapper);
+
+        Map<String, UserItem> occupants = roomItem.getOccupants();
+        Map<String, String> fromDormToDormMap = new HashMap<>();
+        orderItems.forEach(orderItem -> fromDormToDormMap.put(orderItem.getFromDormId(), orderItem.getToDormId()));
+        List<OrderVo> orderVos = new ArrayList<>();
+        orderItems.forEach(orderItem -> orderVos.add(new OrderVo()
+                .setUserId(occupants.get(orderItem.getUserId()).getUserName())
+                .setFromDormId(orderItem.getFromDormId())
+                .setToDormId(fromDormToDormMap.get(orderItem.getToDormId()))
+                .setStartDate(orderItem.getStartDate())
+        ));
+        Page<OrderVo> page = new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize());
+        page.setRecords(orderVos);
+        return page;
     }
 
     public IPage<OrderVo> getOrdersByToDorm(String toDormId, OrderQueryRequest orderQueryRequest) {
         LambdaQueryChainWrapper<OrderItem> queryWrapper = new QueryChainWrapper<>(orderMapper).lambda()
                 .eq(OrderItem::getToDormId, toDormId)
                 .orderByDesc(OrderItem::getStartDate);
-        Map<String, RoomItem> occupantRoomMap = roomMapper.selectList(new QueryChainWrapper<>(roomMapper).lambda()
-                .like(RoomItem::getRoomId, toDormId)).stream().collect(
-                        Collectors.toMap(RoomItem::getRoomName, roomItem -> roomItem, (a, b) -> a, HashMap::new));
-        return orderMapper.selectPage(new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize()), queryWrapper)
-                .convert(orderItem -> new OrderVo()
-                        .setUserId(orderItem.getUserId())
-                        .setFromDormId(occupantRoomMap.get(orderItem.getFromDormId()).getDormName())
-                        .setToDormId(occupantRoomMap.get(orderItem.getToDormId()).getDormName())
-                        .setStartDate(orderItem.getStartDate())
-                );
+        List<OrderItem> orderItems = orderMapper.selectList(queryWrapper);
+
+        LambdaQueryChainWrapper<RoomItem> roomWrapper = new QueryChainWrapper<>(roomMapper).lambda()
+                .in(RoomItem::getRoomId, new ArrayList<>(orderItems.stream().map(OrderItem::getFromDormId).toList()));
+        List<RoomItem> roomItems = roomMapper.selectList(roomWrapper);
+
+        Map<String, String> orderIdUserIdMap = new HashMap<>();
+        Map<String, RoomItem> orderIdFromDormMap = new HashMap<>();
+        orderItems.forEach(orderItem -> orderIdUserIdMap.put(orderItem.getOrderId(), orderItem.getUserId()));
+        roomItems.forEach(roomItem -> orderIdFromDormMap.put(roomItem.getRoomName(), roomItem));
+        List<OrderVo> orderVos = new ArrayList<>();
+        orderItems.forEach(orderItem -> orderVos.add(new OrderVo()
+                .setUserId(orderIdUserIdMap.get(orderItem.getOrderId()))
+                .setFromDormId(orderIdFromDormMap.get(orderItem.getFromDormId()).getDormName())
+                .setToDormId(toDormId)
+                .setStartDate(orderItem.getStartDate())
+                .setEndDate(orderItem.getEndDate())
+        ));
+        Page<OrderVo> page = new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize());
+        page.setRecords(orderVos);
+        return page;
     }
 
     public IPage<OrderVo> getOrdersByKeywords(List<String> keywords, OrderQueryRequest orderQueryRequest) {
         LambdaQueryChainWrapper<OrderItem> queryWrapper = new QueryChainWrapper<>(orderMapper).lambda();
         keywords.forEach(keyword -> queryWrapper.or().like(OrderItem::getTitle, keyword)
                 .or().like(OrderItem::getDescription, keyword));
-        return orderMapper.selectPage(new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize()), queryWrapper)
-                .convert(orderItem -> new OrderVo()
-                        .setUserId(orderItem.getUserId())
-                        .setFromDormId(orderItem.getFromDormId())
-                        .setToDormId(orderItem.getToDormId())
-                        .setStartDate(orderItem.getStartDate())
-                );
+        List<OrderItem> orderItems = orderMapper.selectList(queryWrapper);
+        List<OrderVo> orderVos = new ArrayList<>();
+        orderItems.forEach(orderItem -> orderVos.add(new OrderVo()
+                .setUserId(orderItem.getUserId())
+                .setFromDormId(orderItem.getFromDormId())
+                .setToDormId(orderItem.getToDormId())
+                .setStartDate(orderItem.getStartDate())
+                .setEndDate(orderItem.getEndDate())
+        ));
+        Page<OrderVo> page = new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize());
+        page.setRecords(orderVos);
+        return page;
     }
 
     public IPage<OrderVo> getOrdersByOccupants(List<String> occupants, OrderQueryRequest orderQueryRequest) {
         LambdaQueryChainWrapper<OrderItem> queryWrapper = new QueryChainWrapper<>(orderMapper).lambda();
-        Map<String, RoomItem> occupantRoomMap = roomMapper.selectList(new QueryChainWrapper<>(roomMapper).lambda()
-                .eq(RoomItem::getRoomId, userMapper.selectById(occupants.get(0)).getRoomId())).stream().collect(
-                Collectors.toMap(RoomItem::getRoomName, roomItem -> roomItem, (a, b) -> a, HashMap::new));
-        occupants.forEach(occupant -> queryWrapper.or().eq(OrderItem::getUserId, occupant)
-                .or().eq(OrderItem::getFromDormId, occupantRoomMap.get(occupant).getRoomId())
-                .or().eq(OrderItem::getToDormId, occupantRoomMap.get(occupant).getRoomId()));
-        return orderMapper.selectPage(new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize()), queryWrapper)
-                .convert(orderItem -> new OrderVo()
-                        .setUserId(orderItem.getUserId())
-                        .setFromDormId(occupantRoomMap.get(orderItem.getFromDormId()).getDormName())
-                        .setToDormId(occupantRoomMap.get(orderItem.getToDormId()).getDormName())
-                        .setStartDate(orderItem.getStartDate())
-                );
+        LambdaQueryChainWrapper<UserItem> userWrapper = new QueryChainWrapper<>(userMapper).lambda();
+        occupants.forEach(occupant -> {
+            queryWrapper.or().eq(OrderItem::getUserId, occupant);
+            userWrapper.or().eq(UserItem::getUserName, occupant);
+        });
+        List<OrderItem> orderItems = orderMapper.selectList(queryWrapper);
+        List<UserItem> userItems = userMapper.selectList(userWrapper);
+
+        LambdaQueryChainWrapper<RoomItem> roomWrapper = new QueryChainWrapper<>(roomMapper).lambda()
+                .in(RoomItem::getRoomId, new ArrayList<>(userItems.stream().map(UserItem::getRoomId).toList()));
+        List<RoomItem> roomItems = roomMapper.selectList(roomWrapper);
+        Map<String, UserItem> mergedOccupantMap = new HashMap<>();
+        roomItems.forEach(roomItem -> {
+            Map<String, UserItem> occupantMap = roomItem.getOccupants();
+            mergedOccupantMap.putAll(occupantMap);
+        });
+        Map<String, String> occupantNameRoomIdMap = new HashMap<>();
+        mergedOccupantMap.forEach((key, value) -> occupantNameRoomIdMap.put(key, mergedOccupantMap.get(key).getRoomId()));
+        orderItems.addAll(new QueryChainWrapper<>(orderMapper).lambda().in(OrderItem::getToDormId, occupantNameRoomIdMap.values()).list());
+
+        List<OrderVo> orderVos = new ArrayList<>();
+        orderItems.forEach(orderItem -> orderVos.add(new OrderVo()
+                .setUserId(mergedOccupantMap.get(orderItem.getUserId()).getUserName())
+                .setFromDormId(orderItem.getFromDormId())
+                .setToDormId(orderItem.getToDormId())
+                .setStartDate(orderItem.getStartDate())
+                .setEndDate(orderItem.getEndDate())
+        ));
+        Page<OrderVo> page = new Page<>(orderQueryRequest.getCurrentId(), orderQueryRequest.getPageSize());
+        page.setRecords(orderVos);
+        return page;
     }
 
     public IPage<FetchVo> getFetchesByOrderId(String orderId, FetchQueryRequest fetchQueryRequest) {
@@ -162,18 +182,25 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderItem> implem
                 .eq(OrderItem::getOrderId, orderId)
                 .orderByDesc(OrderItem::getStartDate);
         OrderItem orderItem = orderMapper.selectOne(orderWrapper);
+
         LambdaQueryChainWrapper<FetchItem> fetchWrapper = new QueryChainWrapper<>(fetchMapper).lambda()
                 .eq(FetchItem::getFetchId, orderId);
-        Map<String, FetchItem> fetchMap = fetchMapper.selectList(fetchWrapper).stream().collect(
-                Collectors.toMap(FetchItem::getFetchId, fetchItem -> fetchItem, (a, b) -> a, HashMap::new));
-        fetchMap.forEach((key, value) -> fetchWrapper.ge(FetchItem::getStartDate, value.getStartDate())
-                .le(FetchItem::getEndDate, value.getEndDate()));
-        return fetchMapper.selectPage(new Page<>(fetchQueryRequest.getCurrentId(), fetchQueryRequest.getPageSize()), fetchWrapper)
-                .convert(fetchItem -> new FetchVo()
-                        .setFetchId(fetchItem.getFetchId())
-                        .setUserId(fetchItem.getUserId())
-                        .setStartDate(fetchMap.get(orderItem.getOrderId()).getStartDate())
-                        .setEndDate(fetchMap.get(orderItem.getOrderId()).getEndDate()));
+        List<FetchItem> fetchItems = fetchMapper.selectList(fetchWrapper);
+        Map<String, FetchItem> fetchMap = new HashMap<>();
+        fetchItems.forEach(fetchItem -> fetchMap.put(fetchItem.getFetchId(), fetchItem));
+        fetchMap.forEach((key, value) ->
+                fetchWrapper.ge(FetchItem::getStartDate, value.getStartDate())
+                        .le(FetchItem::getEndDate, value.getEndDate()));
+
+        List<FetchVo> fetchVos = new ArrayList<>();
+        fetchItems.forEach(fetchItem -> fetchVos.add(new FetchVo()
+                .setFetchId(fetchItem.getFetchId())
+                .setUserId(fetchItem.getUserId())
+                .setStartDate(fetchMap.get(orderItem.getOrderId()).getStartDate())
+                .setEndDate(fetchMap.get(orderItem.getOrderId()).getEndDate())));
+        Page<FetchVo> page = new Page<>(fetchQueryRequest.getCurrentId(), fetchQueryRequest.getPageSize());
+        page.setRecords(fetchVos);
+        return page;
      }
 
     public List<OrderVo> getOrdersByUserId(String userId) {

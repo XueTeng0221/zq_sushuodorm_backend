@@ -17,6 +17,7 @@ import com.ziqiang.sushuodorm.services.FetchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -49,32 +50,30 @@ public class FetchServiceImpl extends ServiceImpl<FetchMapper, FetchItem> implem
                 .eq(FetchItem::getFetchId, fetchId)
                 .eq(FetchItem::getUserId, userId);
         FetchItem fetchItem = fetchMapper.selectOne(queryWrapper);
-        return fetchMapper.update(new FetchItem()
-                .setDescription(description).setToDormId(
-                        orderUpdateRequest.getStatus() == OrderStatusEnum.FINISHED ? fetchItem.getFromDormId() : null),
-                queryWrapper) > 0;
+        String toDormId = orderUpdateRequest.getStatus() == OrderStatusEnum.FINISHED ? fetchItem.getFromDormId() : null;
+        return fetchMapper.update(fetchItem.setDescription(description).setToDormId(toDormId), queryWrapper) > 0;
     }
 
     public IPage<FetchVo> getFetchesByRoomId(String roomId, FetchQueryRequest fetchQueryRequest) {
         LambdaQueryChainWrapper<FetchItem> queryWrapper = new QueryChainWrapper<>(fetchMapper).lambda()
                 .eq(FetchItem::getFromDormId, roomId)
-                .eq(FetchItem::getToDormId, roomId)
-                .like(fetchQueryRequest.getUserId() != null, FetchItem::getUserId, fetchQueryRequest.getUserId())
-                .like(fetchQueryRequest.getDescription() != null, FetchItem::getDescription, fetchQueryRequest.getDescription());
-        return fetchMapper.selectPage(new Page<>(fetchQueryRequest.getCurrentId(), fetchQueryRequest.getPageSize()), queryWrapper)
-                .convert(fetchItem -> new FetchVo()
-                        .setFetchId(fetchItem.getFetchId())
-                        .setUserId(fetchItem.getUserId())
-                        .setStartDate(fetchItem.getStartDate())
-                        .setEndDate(fetchItem.getEndDate()));
+                .eq(FetchItem::getToDormId, roomId);
+        List<FetchItem> fetchItems = fetchMapper.selectList(queryWrapper);
+        List<FetchVo> fetchVos = new ArrayList<>();
+        fetchItems.forEach(fetchItem -> fetchVos.add(new FetchVo()
+                .setFetchId(fetchItem.getFetchId())
+                .setUserId(fetchItem.getUserId())
+                .setStartDate(fetchItem.getStartDate())
+                .setEndDate(fetchItem.getEndDate())));
+        Page<FetchVo> page = new Page<>(fetchQueryRequest.getCurrentId(), fetchQueryRequest.getPageSize());
+        page.setRecords(fetchVos);
+        return page;
     }
 
     @Override
     public IPage<FetchVo> getFetchesByFromDorm(String fromDormId, FetchQueryRequest fetchQueryRequest) {
         LambdaQueryChainWrapper<FetchItem> fetchWrapper = new QueryChainWrapper<>(fetchMapper).lambda()
-                .eq(FetchItem::getFromDormId, fromDormId)
-                .like(fetchQueryRequest.getUserId() != null, FetchItem::getUserId, fetchQueryRequest.getUserId())
-                .like(fetchQueryRequest.getDescription() != null, FetchItem::getDescription, fetchQueryRequest.getDescription());
+                .eq(FetchItem::getFromDormId, fromDormId);
         LambdaQueryChainWrapper<OrderItem> orderWrapper = new QueryChainWrapper<>(orderMapper).lambda()
                 .eq(OrderItem::getFromDormId, fromDormId);
         OrderItem orderItem = orderMapper.selectOne(orderWrapper);
@@ -82,26 +81,34 @@ public class FetchServiceImpl extends ServiceImpl<FetchMapper, FetchItem> implem
             fetchWrapper.ge(FetchItem::getStartDate, orderItem.getStartDate())
                     .le(FetchItem::getEndDate, orderItem.getEndDate());
         }
-        return fetchMapper.selectPage(new Page<>(fetchQueryRequest.getCurrentId(), fetchQueryRequest.getPageSize()), fetchWrapper)
-                .convert(fetchItem -> new FetchVo()
-                        .setFetchId(fetchItem.getFetchId())
-                        .setUserId(fetchItem.getUserId())
-                        .setStartDate(fetchItem.getStartDate())
-                        .setEndDate(fetchItem.getEndDate()));
+
+        List<FetchItem> fetchItems = fetchMapper.selectList(fetchWrapper);
+        List<FetchVo> fetchVos = new ArrayList<>();
+        fetchItems.forEach(fetchItem -> fetchVos.add(new FetchVo()
+                .setFetchId(fetchItem.getFetchId())
+                .setUserId(fetchItem.getUserId())
+                .setStartDate(fetchItem.getStartDate())
+                .setEndDate(fetchItem.getEndDate())));
+        Page<FetchVo> page = new Page<>(fetchQueryRequest.getCurrentId(), fetchQueryRequest.getPageSize());
+        page.setRecords(fetchVos);
+        return page;
     }
 
     @Override
     public IPage<FetchVo> getFetchesByToDorm(String toDormId, FetchQueryRequest fetchQueryRequest) {
         LambdaQueryChainWrapper<FetchItem> fetchWrapper = new QueryChainWrapper<>(fetchMapper).lambda()
-                .eq(FetchItem::getToDormId, toDormId)
-                .like(fetchQueryRequest.getUserId() != null, FetchItem::getUserId, fetchQueryRequest.getUserId())
-                .like(fetchQueryRequest.getDescription() != null, FetchItem::getDescription, fetchQueryRequest.getDescription());
-        return fetchMapper.selectPage(new Page<>(fetchQueryRequest.getCurrentId(), fetchQueryRequest.getPageSize()), fetchWrapper)
-                .convert(fetchItem -> new FetchVo()
-                        .setFetchId(fetchItem.getFetchId())
-                        .setUserId(fetchItem.getUserId())
-                        .setStartDate(fetchItem.getStartDate())
-                        .setEndDate(fetchItem.getEndDate()));
+                .eq(FetchItem::getToDormId, toDormId);
+        List<FetchItem> fetchItems = fetchMapper.selectList(fetchWrapper);
+
+        List<FetchVo> fetchVos = new ArrayList<>();
+        fetchItems.forEach(fetchItem -> fetchVos.add(new FetchVo()
+                .setFetchId(fetchItem.getFetchId())
+                .setUserId(fetchItem.getUserId())
+                .setStartDate(fetchItem.getStartDate())
+                .setEndDate(fetchItem.getEndDate())));
+        Page<FetchVo> page = new Page<>(fetchQueryRequest.getCurrentId(), fetchQueryRequest.getPageSize());
+        page.setRecords(fetchVos);
+        return page;
     }
 
     @Override

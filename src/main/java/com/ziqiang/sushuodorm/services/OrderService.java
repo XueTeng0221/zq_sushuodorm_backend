@@ -20,8 +20,6 @@ public interface OrderService extends IService<OrderItem> {
 
     List<OrderVo> getOrdersByUserId(String userId);
 
-    IPage<OrderVo> getOrdersByRoomId(String roomId, OrderQueryRequest orderQueryRequest);
-
     IPage<OrderVo> getOrdersByFromDorm(String fromDormId, OrderQueryRequest orderQueryRequest);
 
     IPage<OrderVo> getOrdersByToDorm(String toDormId, OrderQueryRequest orderQueryRequest);

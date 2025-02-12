@@ -54,13 +54,6 @@ public class OrderController {
         return ResponseBeanVo.ok(orderService.getOrdersByUserId(userId));
     }
 
-    @PostMapping("/getOrdersByRoomId")
-    @RequestMapping("/{roomId}")
-    public ResponseBeanVo<List<OrderVo>> getOrdersByRoomId(@PathVariable("roomId") String roomId,
-                                           @RequestBody OrderQueryRequest orderQueryRequest) {
-        return ResponseBeanVo.ok(orderService.getOrdersByRoomId(roomId, orderQueryRequest).getRecords());
-    }
-
     @PostMapping("/getOrdersByFromDorm")
     @RequestMapping("/{fromDormId}")
     public ResponseBeanVo<List<OrderVo>> getOrdersByFromDorm(@PathVariable("fromDormId") String fromDormId,

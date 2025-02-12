@@ -67,7 +67,7 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
                 .setTitle(title)
                 .setSubject(subject)
                 .setIsDeleted(false);
-        return update(mailItem, queryWrapper);
+        return mailMapper.update(mailItem, queryWrapper) > 0;
     }
 
     @Override
@@ -76,7 +76,7 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
                 .eq(MailItem::getSenderName, username)
                 .eq(MailItem::getIsDeleted, false);
         return mailMapper.selectPage(queryRequest.getPage(), queryWrapper).setRecords(
-                new ArrayList<>(queryWrapper.list()));
+                new ArrayList<>(mailMapper.selectList(queryWrapper)));
     }
 
     @Override
@@ -85,12 +85,10 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
                 .eq(MailItem::getId, Long.parseLong(mailId));
         MailItem mailItem = mailMapper.selectOne(queryWrapper);
         List<UserVo> userVos = new ArrayList<>();
-        mailItem.getReceivers().forEach((receiverName, userItem) -> {
-            userVos.add(new UserVo()
-                    .setUserName(receiverName)
-                    .setUserAvatar(userItem.getUserAvatar())
-                    .setRoomId(userItem.getRoomId()));
-        });
+        mailItem.getReceivers().forEach((receiverName, userItem) -> userVos.add(new UserVo()
+                .setUserName(receiverName)
+                .setUserAvatar(userItem.getUserAvatar())
+                .setRoomId(userItem.getRoomId())));
         Page<UserVo> page = new Page<>(currentSize, pageSize);
         page.setTotal(mailItem.getReceivers().size()).setRecords(userVos);
         return page;
