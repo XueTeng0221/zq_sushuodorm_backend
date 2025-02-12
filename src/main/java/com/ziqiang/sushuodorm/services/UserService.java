@@ -6,6 +6,8 @@ import com.ziqiang.sushuodorm.entity.vo.UserVo;
 import com.ziqiang.sushuodorm.exception.BizException;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.sql.Date;
+
 public interface UserService extends IService<UserItem> {
     long userRegister(String userAccount, String userPassword, String checkPassword) throws BizException;
 
@@ -23,5 +25,5 @@ public interface UserService extends IService<UserItem> {
 
     boolean updateRoomId(String userId, String roomId);
 
-    boolean insertUserProfile(String gender, String nickname, String avatar);
+    boolean insertUserProfile(String username, String gender, String nickname, String avatar, String roomId, Date date);
 }

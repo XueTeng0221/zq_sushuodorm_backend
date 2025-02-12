@@ -10,7 +10,7 @@ import java.io.Serializable;
 @EqualsAndHashCode(callSuper = false)
 public class UserQueryRequest extends PageRequest implements Serializable {
     private static final long serialVersionUID = 1L;
-    private Long id;
+    private String gender;
     private String unionId;
     private String userName;
     private String userProfile;

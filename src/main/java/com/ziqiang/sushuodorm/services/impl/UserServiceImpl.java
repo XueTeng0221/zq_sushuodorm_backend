@@ -24,6 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
+import java.sql.Date;
+
 @Service
 @EqualsAndHashCode(callSuper = false)
 @Data
@@ -154,11 +156,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
     }
 
     @Override
-    public boolean insertUserProfile(String gender, String nickname, String avatar) {
-        UserItem userItem = new UserItem()
+    public boolean insertUserProfile(String username, String gender, String nickname, String avatar, String roomId, Date date) {
+        LambdaUpdateChainWrapper<UserItem> queryWrapper = new UpdateChainWrapper<>(userMapper).lambda()
+                .eq(UserItem::getUserName, username);
+        UserItem userItem = userMapper.selectOne(queryWrapper)
                 .setGender(gender)
                 .setUserName(nickname)
-                .setUserAvatar(avatar);
+                .setUserAvatar(avatar)
+                .setRoomId(roomId)
+                .setUpdateTime(date);
         return userMapper.insert(userItem) > 0;
     }
 }

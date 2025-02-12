@@ -3,6 +3,7 @@ package com.ziqiang.sushuodorm.controller;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.ziqiang.sushuodorm.common.ErrorCode;
 import com.ziqiang.sushuodorm.entity.dto.user.UserLoginRequest;
+import com.ziqiang.sushuodorm.entity.dto.user.UserQueryRequest;
 import com.ziqiang.sushuodorm.entity.dto.user.UserRegisterRequest;
 import com.ziqiang.sushuodorm.entity.vo.ResponseBeanVo;
 import com.ziqiang.sushuodorm.entity.vo.UserVo;
@@ -13,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.sql.Date;
 
 @RequestMapping("/user")
 @RestController
@@ -87,8 +90,10 @@ public class UserController {
     }
 
     @PutMapping("/insertUserProfile")
-    public ResponseBeanVo<?> insertUserProfile(@RequestParam String gender, @RequestParam String nickname, @RequestParam String avatar) {
-        boolean b = userService.insertUserProfile(gender, nickname, avatar);
+    public ResponseBeanVo<?> insertUserProfile(@RequestBody UserQueryRequest userQueryRequest, @RequestParam String nickname,
+                                               @RequestParam String roomId, @RequestParam Date date) {
+        boolean b = userService.insertUserProfile(userQueryRequest.getUserName(), userQueryRequest.getGender(),
+                nickname, userQueryRequest.getUserAvatar(), roomId, date);
         return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.REQUEST_ERROR,null);
     }
 }
