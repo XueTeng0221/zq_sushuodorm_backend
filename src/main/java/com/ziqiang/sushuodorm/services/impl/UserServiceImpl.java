@@ -78,7 +78,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserItem> implement
         }
         String encryptedPassword = DigestUtils.md5DigestAsHex((userAccount + SALT + userPassword).getBytes());
         LambdaQueryChainWrapper<UserItem> queryWrapper = new QueryChainWrapper<>(userMapper).lambda()
-                .eq(UserItem::getUnionId, request.getParameter("code"));
+                .eq(UserItem::getUnionId, request.getParameter("code"))
+                .eq(UserItem::getUserPassword, encryptedPassword);
         UserItem loginUser = userMapper.selectOne(queryWrapper);
         if (ObjectUtils.isEmpty(loginUser)) {
             log.info("userAccount cannot match userPassword");
