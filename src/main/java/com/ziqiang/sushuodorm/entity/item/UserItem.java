@@ -22,7 +22,7 @@ public class UserItem implements Serializable {
     @TableField
     private String userPassword;
     @TableField(value = "union_id")
-    private String unionId;
+    private Long unionId;
     @TableField(value = "username")
     private String userName;
     @TableField(value = "avatar_url")

@@ -1,13 +1,16 @@
 package com.ziqiang.sushuodorm.controller;
 
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.ziqiang.sushuodorm.common.ErrorCode;
-import com.ziqiang.sushuodorm.entity.item.UserItem;
+import com.ziqiang.sushuodorm.entity.dto.user.UserLoginRequest;
+import com.ziqiang.sushuodorm.entity.dto.user.UserRegisterRequest;
 import com.ziqiang.sushuodorm.entity.vo.ResponseBeanVo;
+import com.ziqiang.sushuodorm.entity.vo.UserVo;
+import com.ziqiang.sushuodorm.exception.BizException;
 import com.ziqiang.sushuodorm.services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,9 +22,32 @@ public class UserController {
     private UserService userService;
 
     @PutMapping("/getLoginUser")
-    public ResponseBeanVo<?> getLoginUser(@RequestBody HttpServletRequest request) {
-        UserItem userItem = userService.getLoginUser(request);
-        return ObjectUtils.isNotNull(userItem) ? ResponseBeanVo.ok(userItem) : ResponseBeanVo.error(ErrorCode.LOGIN_FAILED, null);
+    public ResponseBeanVo<?> userRegister(@RequestBody UserRegisterRequest registerRequest) {
+        if (ObjectUtils.isNull(registerRequest)) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "参数为空");
+        }
+        String userAccount = registerRequest.getUserAccount();
+        String userPassword = registerRequest.getUserPassword();
+        String checkPassword = registerRequest.getCheckPassword();
+        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "参数为空");
+        }
+        Long result = userService.userRegister(userAccount, userPassword, checkPassword);
+        return ResponseBeanVo.ok(result);
+    }
+
+    @PostMapping("/login")
+    public ResponseBeanVo<?> getLoginUser(@RequestBody UserLoginRequest loginRequest, HttpServletRequest request) {
+        if (ObjectUtils.isNull(loginRequest)) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "参数为空");
+        }
+        String userAccount = loginRequest.getUserAccount();
+        String userPassword = loginRequest.getUserPassword();
+        if (StringUtils.isAnyBlank(userAccount, userPassword)) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "参数为空");
+        }
+        UserVo userVo = userService.getLoginUser(userAccount, userPassword, request);
+        return userVo != null ? ResponseBeanVo.ok(userVo) : ResponseBeanVo.error(ErrorCode.REQUEST_ERROR, null);
     }
 
     @PostMapping("/getUserId")

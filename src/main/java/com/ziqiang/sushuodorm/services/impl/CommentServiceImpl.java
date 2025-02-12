@@ -223,7 +223,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     @Override
     @Transactional
     public IPage<CommentVo> getAllRepliesByUser(String replierName, String username, Long postId, CommentQueryRequest commentQueryRequest)
-    throws NoSuchPostException {
+        throws NoSuchPostException {
         // 查询
         LambdaQueryChainWrapper<PostItem> postQueryWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .eq(PostItem::getId, postId);

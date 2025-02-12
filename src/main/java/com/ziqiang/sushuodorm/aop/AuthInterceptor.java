@@ -3,7 +3,7 @@ package com.ziqiang.sushuodorm.aop;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.ziqiang.sushuodorm.annotation.AuthCheck;
 import com.ziqiang.sushuodorm.entity.enums.UserRoleEnum;
-import com.ziqiang.sushuodorm.entity.item.UserItem;
+import com.ziqiang.sushuodorm.entity.vo.UserVo;
 import com.ziqiang.sushuodorm.services.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,12 +26,12 @@ public class AuthInterceptor {
         String value = authCheck.value();
         RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
         HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
-        UserItem loginUser = userService.getLoginUser(request);
+        UserVo loginUser = userService.getLoginUser(value, value, request);
         UserRoleEnum mustRoleEnum = UserRoleEnum.getEnumByValue(value);
         if (ObjectUtils.isNotNull(mustRoleEnum)) {
             return joinPoint.proceed();
         }
-        UserRoleEnum userRoleEnum = UserRoleEnum.getEnumByValue(loginUser.getUserRole());
+        UserRoleEnum userRoleEnum = UserRoleEnum.getEnumByValue(loginUser.getUserRole().getValue());
         if (ObjectUtils.isNull(userRoleEnum)) {
             throw new RuntimeException();
         }
