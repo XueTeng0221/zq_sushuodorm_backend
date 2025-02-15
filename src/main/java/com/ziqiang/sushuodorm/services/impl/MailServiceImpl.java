@@ -99,21 +99,18 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
         LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
                 .eq(MailItem::getSenderName, username);
         List<MailItem> mailItems = mailMapper.selectList(queryWrapper);
-        Map<String, Set<UserItem>> receiverMap = new HashMap<>();
-        mailItems.forEach(mailItem ->
-            mailItem.getReceivers().keySet().forEach(receiverName ->
-                receiverMap.putIfAbsent(receiverName, new HashSet<>())
-        ));
-        List<UserVo> userVos = new ArrayList<>();
-        receiverMap.keySet().forEach(receiverName -> {
-            Set<UserItem> userItems = receiverMap.get(receiverName);
+        Map<Long, Set<UserItem>> receiverMap = new HashMap<>();
+        mailItems.forEach(mailItem -> receiverMap.put(mailItem.getId(), new HashSet<>(mailItem.getReceivers().values())));
+        Set<UserVo> userVos = new HashSet<>();
+        receiverMap.keySet().forEach(id -> {
+            Set<UserItem> userItems = receiverMap.get(id);
             userVos.addAll(userItems.stream().map(userItem -> new UserVo()
                     .setUserName(userItem.getUserName())
                     .setUserAvatar(userItem.getUserAvatar())
                     .setRoomId(userItem.getRoomId())).toList());
         });
         Page<UserVo> page = new Page<>(currentSize, pageSize);
-        page.setRecords(userVos);
+        page.setRecords(userVos.stream().toList());
         page.setTotal(receiverMap.size());
         return page;
     }

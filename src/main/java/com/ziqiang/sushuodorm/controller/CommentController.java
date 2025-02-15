@@ -16,7 +16,7 @@ import java.util.List;
 import java.sql.Date;
 
 @RestController
-@RequestMapping("评论")
+@RequestMapping("comment")
 @Slf4j
 public class CommentController {
     @Autowired

@@ -12,25 +12,25 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("点赞评论")
+@RequestMapping("likeComment")
 @Slf4j
 public class LikeCommentController {
     @Autowired
     private LikeCommentService likeCommentService;
 
-    @PostMapping("点赞")
+    @PostMapping("likeComment")
     public ResponseBeanVo<?> likeComment(@RequestParam String userId, @RequestParam Long commentId) {
         boolean b = likeCommentService.save(userId, commentId);
         return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
-    @PostMapping("取消点赞")
+    @PostMapping("unlikeComment")
     public ResponseBeanVo<?> unlikeComment(@RequestParam String userId, @RequestParam Long commentId) {
         boolean b = likeCommentService.remove(userId, commentId);
         return b ? ResponseBeanVo.ok() : ResponseBeanVo.error(ErrorCode.CLIENT_ERROR, null);
     }
 
-    @PostMapping("获取点赞列表")
+    @PostMapping("getLikeList")
     public ResponseBeanVo<IPage<LikeCommentItem>> getLikeCommentList(@RequestParam String userId,
                                                      @RequestBody @Validated PageRequest pageRequest) {
         return ResponseBeanVo.ok(likeCommentService.getPage(userId, pageRequest.getCurrentId(), pageRequest.getPageSize()));
