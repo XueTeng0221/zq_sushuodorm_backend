@@ -1,5 +1,6 @@
 package com.ziqiang.sushuodorm.services.impl;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @EqualsAndHashCode(callSuper = true)
@@ -27,13 +29,17 @@ public class LikePostServiceImpl extends ServiceImpl<LikePostMapper, LikePostIte
     @Autowired
     private PostMapper postMapper;
 
+    public Optional<PostItem> selectOptional(Wrapper<PostItem> queryWrapper) {
+        return Optional.ofNullable(postMapper.selectOne(queryWrapper));
+    }
+
     @Override
     public boolean save(String userId, Long postId) throws NoSuchPostException {
         LambdaQueryChainWrapper<PostItem> queryWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .eq(PostItem::getAuthor, userId)
                 .eq(PostItem::getId, postId)
                 .eq(PostItem::getIsDeleted, false);
-        PostItem postItem = postMapper.selectOne(queryWrapper);
+        PostItem postItem = selectOptional(queryWrapper).orElseThrow(NoSuchPostException::new);
         postItem.setLikes(postItem.getLikes() + 1);
         return likePostMapper.insert(new LikePostItem().setPostId(postId)) > 0;
     }
@@ -46,7 +52,7 @@ public class LikePostServiceImpl extends ServiceImpl<LikePostMapper, LikePostIte
                 .eq(LikePostItem::getIsDeleted, false);
         LambdaQueryChainWrapper<PostItem> postWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .eq(PostItem::getId, postId);
-        PostItem postItem = postMapper.selectOptional(postWrapper).orElseThrow(NoSuchPostException::new);
+        PostItem postItem = selectOptional(postWrapper).orElseThrow(NoSuchPostException::new);
         postItem.setLikes(postItem.getLikes() - 1);
         return postMapper.updateById(postItem) > 0 && likePostMapper.delete(queryWrapper) > 0;
     }

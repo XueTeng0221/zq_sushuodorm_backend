@@ -1,0 +1,30 @@
+{
+  "test 1": {
+    "input": {
+      "CommentItems": [
+        {
+          "CommentId": "1",
+          "CommentText": "test comment text 1",
+          "CommentDate": "2019-01-01T00:00:00Z",
+          "CommentAuthor": "test comment text 1",
+          "PostId": "123"
+        },
+        {
+          "CommentId": "2",
+          "CommentText": "test comment text 2",
+          "CommentDate": "2019-01-01T00:00:00Z",
+          "CommentAuthor": "test comment text 2",
+          "PostId": "123"
+        },
+        {
+          "CommentId": "3",
+          "CommentText": "test comment text 3",
+          "CommentDate": "2019-01-01T00:00:00Z",
+          "CommentAuthor": "test comment text 3",
+          "PostId": "459"
+        }
+      ]
+    },
+    "output": "test 1"
+  }
+}

@@ -1,5 +1,6 @@
 package com.ziqiang.sushuodorm.services.impl;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
@@ -39,11 +40,19 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
 
     private Map<Long, Set<CommentItem>> commentTree = new HashMap<>();
 
+    public Optional<CommentItem> selectOptComment(Wrapper<CommentItem> commentItemWrapper) {
+        return Optional.ofNullable(commentMapper.selectOne(commentItemWrapper));
+    }
+    
+    public Optional<PostItem> selectOptPost(Wrapper<PostItem> postItemWrapper) {
+        return Optional.ofNullable(postMapper.selectOne(postItemWrapper));
+    }
+    
     @Override
     public boolean addComment(Date date, Long postId, String username, String content) throws NoSuchPostException {
         LambdaQueryChainWrapper<PostItem> postQueryWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .eq(PostItem::getId, postId);
-        PostItem postItem = postMapper.selectOptional(postQueryWrapper).orElseThrow(NoSuchPostException::new);
+        PostItem postItem = selectOptPost(postQueryWrapper).orElseThrow(NoSuchPostException::new);
         CommentItem commentItem = new CommentItem()
                 .setDate(date)
                 .setAuthor(username)
@@ -60,11 +69,11 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     public boolean addReply(Date date, Long commentId, String replierName, String content) throws NoSuchPostException, NoSuchCommentException {
         LambdaQueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).lambda()
                 .eq(CommentItem::getId, commentId);
-        CommentItem commentItem = commentMapper.selectOptional(queryWrapper).orElseThrow(NoSuchCommentException::new);
+        CommentItem commentItem = selectOptComment(queryWrapper).orElseThrow(NoSuchCommentException::new);
 
         LambdaQueryChainWrapper<PostItem> postQueryWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .eq(PostItem::getId, commentItem.getPostId());
-        PostItem postItem = postMapper.selectOptional(postQueryWrapper).orElseThrow(NoSuchPostException::new);
+        PostItem postItem = selectOptPost(postQueryWrapper).orElseThrow(NoSuchPostException::new);
 
         CommentItem replyItem = new CommentItem()
                 .setDate(date)
@@ -84,11 +93,11 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
         LambdaQueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).lambda()
                 .eq(CommentItem::getId, commentId)
                 .eq(CommentItem::getPostId, postId);
-        CommentItem commentItem = commentMapper.selectOptional(queryWrapper).orElseThrow(NoSuchCommentException::new);
+        CommentItem commentItem = selectOptComment(queryWrapper).orElseThrow(NoSuchCommentException::new);
 
         LambdaQueryChainWrapper<PostItem> postQueryWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .eq(PostItem::getId, commentItem.getPostId().equals(postId) ? commentItem.getPostId() : -1L);
-        PostItem postItem = postMapper.selectOptional(postQueryWrapper).orElseThrow(NoSuchPostException::new);
+        PostItem postItem = selectOptPost(postQueryWrapper).orElseThrow(NoSuchPostException::new);
 
         commentItem.getReplies().forEach(item -> item.setParentId(-1L));
         commentTree.get(commentItem.getId()).clear();
@@ -103,7 +112,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
     public CommentVo getComment(Long commentId) throws NoSuchCommentException {
         LambdaQueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).lambda()
                 .eq(CommentItem::getId, commentId);
-        CommentItem commentItem = commentMapper.selectOptional(queryWrapper).orElseThrow(NoSuchCommentException::new);
+        CommentItem commentItem = selectOptComment(queryWrapper).orElseThrow(NoSuchCommentException::new);
         return new CommentVo()
                 .setId(commentItem.getId())
                 .setContent(commentItem.getContent())
@@ -149,13 +158,13 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
         // 查询
         LambdaQueryChainWrapper<PostItem> postQueryWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .eq(PostItem::getId, postId);
-        PostItem postItem = postMapper.selectOptional(postQueryWrapper).orElseThrow(NoSuchPostException::new);
+        PostItem postItem = selectOptPost(postQueryWrapper).orElseThrow(NoSuchPostException::new);
 
         LambdaQueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).lambda()
                 .eq(CommentItem::getId, commentId)
                 .eq(CommentItem::getPostId, postItem.getId())
                 .orderByDesc(CommentItem::getDate);
-        CommentItem selectedComment = commentMapper.selectOptional(queryWrapper).orElseThrow(NoSuchCommentException::new);
+        CommentItem selectedComment = selectOptComment(queryWrapper).orElseThrow(NoSuchCommentException::new);
         // DFS
         List<CommentItem> commentItems = new ArrayList<>();
         Set<CommentItem> visitedCommentSet = new HashSet<>();
@@ -192,13 +201,13 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
         // 查询
         LambdaQueryChainWrapper<PostItem> postQueryWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .eq(PostItem::getId, postId);
-        PostItem postItem = postMapper.selectOptional(postQueryWrapper).orElseThrow(NoSuchPostException::new);
+        PostItem postItem = selectOptPost(postQueryWrapper).orElseThrow(NoSuchPostException::new);
 
         LambdaQueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).lambda()
                 .eq(CommentItem::getId, commentId)
                 .eq(CommentItem::getPostId, postItem.getId())
                 .orderByDesc(CommentItem::getDate);
-        CommentItem selectedComment = commentMapper.selectOptional(queryWrapper).orElseThrow(NoSuchCommentException::new);
+        CommentItem selectedComment = selectOptComment(queryWrapper).orElseThrow(NoSuchCommentException::new);
         // DFS计数
         int replyCount = 0;
         Deque<CommentItem> commentStack = new ArrayDeque<>();
@@ -227,7 +236,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, CommentItem> 
         // 查询
         LambdaQueryChainWrapper<PostItem> postQueryWrapper = new QueryChainWrapper<>(postMapper).lambda()
                 .eq(PostItem::getId, postId);
-        PostItem postItem = postMapper.selectOptional(postQueryWrapper).orElseThrow(NoSuchPostException::new);
+        PostItem postItem = selectOptPost(postQueryWrapper).orElseThrow(NoSuchPostException::new);
 
         LambdaQueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).lambda()
                 .eq(CommentItem::getAuthor, replierName)

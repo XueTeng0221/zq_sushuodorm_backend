@@ -3,9 +3,9 @@ spring:
     name: zq_sushuodorm_backend
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.14.128:3306/OnlineJudge?&allowPublicKeyRetrieval=true&useSSL=false
-    username: root
-    password: root
+    url: jdbc:mysql://47.99.93.160:8085/
+    username: zq_dorm
+    password: Fyt)Tn3HdM2>vp}P*n8Do0
 
 
 mybatis:
@@ -21,3 +21,7 @@ server:
     session:
       cookie:
         max-age: 2592000
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/*.xml
+  type-aliases-package: com.ziqiang.sushuodorm.entity

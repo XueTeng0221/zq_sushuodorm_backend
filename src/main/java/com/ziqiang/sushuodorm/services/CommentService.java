@@ -5,12 +5,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ziqiang.sushuodorm.entity.dto.comment.CommentQueryRequest;
 import com.ziqiang.sushuodorm.entity.item.CommentItem;
 import com.ziqiang.sushuodorm.entity.vo.CommentVo;
+import com.ziqiang.sushuodorm.mapper.CommentMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.sql.Date;
 import java.util.List;
 
 public interface CommentService extends IService<CommentItem> {
-
     boolean addComment(Date date, Long postId, String username, String content);
 
     boolean addReply(Date date, Long commentId, String username, String content);

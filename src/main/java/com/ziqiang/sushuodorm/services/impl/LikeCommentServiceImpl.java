@@ -1,5 +1,6 @@
 package com.ziqiang.sushuodorm.services.impl;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
@@ -7,6 +8,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ziqiang.sushuodorm.entity.item.CommentItem;
 import com.ziqiang.sushuodorm.entity.item.LikeCommentItem;
+import com.ziqiang.sushuodorm.exception.NoSuchCommentException;
+import com.ziqiang.sushuodorm.exception.NoSuchPostException;
 import com.ziqiang.sushuodorm.mapper.CommentMapper;
 import com.ziqiang.sushuodorm.mapper.LikeCommentMapper;
 import com.ziqiang.sushuodorm.services.LikeCommentService;
@@ -16,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Data
@@ -26,22 +30,26 @@ public class LikeCommentServiceImpl extends ServiceImpl<LikeCommentMapper, LikeC
     @Autowired
     private CommentMapper commentMapper;
 
+    public Optional<CommentItem> selectOptional(Wrapper<CommentItem> commentItemWrapper) {
+        return Optional.ofNullable(commentMapper.selectOne(commentItemWrapper));
+    }
+    
     @Override
-    public boolean save(String userId, Long commentId) {
+    public boolean save(String userId, Long commentId) throws NoSuchCommentException {
         LambdaQueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).lambda()
                 .eq(CommentItem::getAuthor, userId)
                 .eq(CommentItem::getId, commentId);
-        CommentItem commentItem = commentMapper.selectOne(queryWrapper);
+        CommentItem commentItem = selectOptional(queryWrapper).orElseThrow(NoSuchCommentException::new);
         commentItem.setLikes(commentItem.getLikes() + 1);
         return commentMapper.updateById(commentItem) > 0;
     }
 
     @Override
-    public boolean remove(String userId, Long commentId) {
+    public boolean remove(String userId, Long commentId) throws NoSuchPostException {
         LambdaQueryChainWrapper<CommentItem> queryWrapper = new QueryChainWrapper<>(commentMapper).lambda()
                 .eq(CommentItem::getAuthor, userId)
                 .eq(CommentItem::getId, commentId);
-        CommentItem commentItem = commentMapper.selectOne(queryWrapper);
+        CommentItem commentItem = selectOptional(queryWrapper).orElseThrow(NoSuchCommentException::new);
         commentItem.setLikes(commentItem.getLikes() - 1);
         return commentMapper.updateById(commentItem) > 0;
     }

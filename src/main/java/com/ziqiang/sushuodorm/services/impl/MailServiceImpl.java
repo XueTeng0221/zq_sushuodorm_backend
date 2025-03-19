@@ -54,8 +54,9 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
         Map<String, UserItem> userItemMap = new HashMap<>();
         receivers.forEach(receiver -> userItemMap.put(receiver.getUserName(), receiver));
         queryWrapper.in(MailItem::getReceivers, userItemMap);
-        return CollectionUtils.isEmpty(receivers) && mailMapper.selectList(queryWrapper).stream().map(mailItem ->
-                mailItem.setIsReplied(true).setTitle("Re: " + mailItem.getTitle())
+        return CollectionUtils.isEmpty(receivers) &&
+                mailMapper.selectList(queryWrapper).stream().map(mailItem ->
+                mailItem.setIsReplied(true).setTitle(mailItem.getTitle())
         ).allMatch(mailItem -> mailMapper.updateById(mailItem) > 0);
     }
 
@@ -63,7 +64,8 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
     public boolean update(String postId, String title, String subject) {
         LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
                 .eq(MailItem::getId, Long.parseLong(postId));
-        MailItem mailItem = new MailItem().setUserId(Long.parseLong(postId))
+        MailItem mailItem = new MailItem()
+                .setUserId(Long.parseLong(postId))
                 .setTitle(title)
                 .setSubject(subject)
                 .setIsDeleted(false);
@@ -75,8 +77,10 @@ public class MailServiceImpl extends ServiceImpl<MailMapper, MailItem> implement
         LambdaQueryChainWrapper<MailItem> queryWrapper = new QueryChainWrapper<>(mailMapper).lambda()
                 .eq(MailItem::getSenderName, username)
                 .eq(MailItem::getIsDeleted, false);
-        return mailMapper.selectPage(queryRequest.getPage(), queryWrapper).setRecords(
-                new ArrayList<>(mailMapper.selectList(queryWrapper)));
+        List<MailItem> mailItems = mailMapper.selectList(queryWrapper);
+        Page<MailItem> page = new Page<>(queryRequest.getCurrentId(), queryRequest.getPageSize());
+        page.setRecords(mailItems);
+        return page;
     }
 
     @Override
