@@ -6,14 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.ziqiang.sushuodorm.entity.enums.OrderStatusEnum;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import org.springframework.data.elasticsearch.annotations.Document;
 
 import java.io.Serializable;
 import java.sql.Date;
 
 @Data
 @Accessors(chain = true)
-@Document(indexName = "order")
 public class OrderItem implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

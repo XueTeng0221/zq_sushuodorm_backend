@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ziqiang.sushuodorm.mapper.RoomMapper">
-
-    <!-- 通用查询映射结果 -->
-    <resultMap id="BaseResultMap" type="com.ziqiang.sushuodorm.entity.item.RoomItem">
-        <id column="room_name" property="roomName" />
-        <result column="dorm_id" property="dormId" />
-        <result column="occupants" property="occupants" />
-    </resultMap>
 </mapper>

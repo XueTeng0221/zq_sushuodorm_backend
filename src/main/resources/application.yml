@@ -23,5 +23,5 @@ server:
         max-age: 2592000
 
 mybatis-plus:
-  mapper-locations: classpath*:/mapper/*.xml
+  mapper-locations: mapper/*.xml
   type-aliases-package: com.ziqiang.sushuodorm.entity

@@ -36,10 +36,7 @@ public class MailItem implements Serializable {
     private String title;
     @TableField(value = "subject")
     private String subject;
-    @TableLogic
     private Boolean isRead;
-    @TableLogic
     private Boolean isDeleted;
-    @TableLogic
     private Boolean isReplied;
 }
